@@ -1,0 +1,2484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>i-Shepherd Kid-Friendly Interactive Teacher Portal</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for Student Progress Tracking -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- html2canvas for JPG Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    .drop-zone.dragover {
+      border-color: #f43f5e !important;
+      background-color: rgba(244, 63, 94, 0.2) !important;
+      transform: scale(1.02);
+    }
+    @media print {
+      .no-print { display: none !important; }
+      @page { margin: 0; size: auto; }
+      body { background-color: #ffffff !important; color: #000000 !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; width: 100% !important; }
+      .tab-content { display: block !important; page-break-after: always; margin: 0 !important; padding: 10px !important; }
+      .tab-content:last-child { page-break-after: avoid; }
+      div, section { box-shadow: none !important; border-radius: 0 !important; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-sky-950 via-indigo-950 to-purple-950 text-slate-100 font-sans min-h-screen pb-12">
+
+  <!-- Attendance Proof Preview Modal Overlay -->
+  <div id="proof-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 hidden">
+    <div class="bg-indigo-950 border-2 border-pink-500/50 rounded-3xl p-6 max-w-3xl w-full shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 bg-pink-500/20 text-pink-400 rounded-2xl">
+            <i data-lucide="image" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">Attendance Proof Confirmation</h3>
+            <p id="proof-modal-subtitle" class="text-xs text-indigo-300">Previewing uploaded screenshot proof</p>
+          </div>
+        </div>
+        <button onclick="closeProofModal()" class="text-indigo-300 hover:text-white p-1 text-lg font-bold">✕</button>
+      </div>
+      <div class="flex-1 overflow-auto flex items-center justify-center bg-indigo-950/80 rounded-2xl border border-indigo-900 p-2 min-h-[300px]">
+        <img id="proof-modal-img" src="" alt="Attendance Proof" class="max-h-[65vh] w-auto object-contain rounded-xl hidden" />
+        <div id="proof-modal-fallback" class="text-center space-y-2 p-6 hidden">
+          <i data-lucide="file-check" class="w-12 h-12 text-pink-400 mx-auto"></i>
+          <p class="text-sm font-semibold text-indigo-200">File attached successfully (Non-image format)</p>
+          <a id="proof-modal-download" href="#" download="attendance_proof" class="inline-flex items-center gap-2 bg-pink-500 hover:bg-pink-400 text-slate-950 font-bold px-4 py-2 rounded-2xl text-xs transition-all shadow-lg">
+            <i data-lucide="download" class="w-4 h-4"></i> Download File Attachment
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Test / Diagnostic Competency Modal Overlay -->
+  <div id="level-test-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 hidden">
+    <div class="bg-indigo-950 border-2 border-sky-400/50 rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 bg-sky-500/20 text-sky-400 rounded-2xl">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">English Competency Level Diagnostic Test</h3>
+            <p class="text-xs text-sky-300">Assess communication, sentence structure & listening response</p>
+          </div>
+        </div>
+        <button onclick="closeLevelTestModal()" class="text-indigo-300 hover:text-white p-1">✕</button>
+      </div>
+
+      <!-- Quick Screener Rubric Form -->
+      <div class="space-y-4 text-xs">
+        <div class="bg-indigo-900/60 p-3.5 rounded-2xl border border-indigo-800/80 space-y-2">
+          <label class="block text-indigo-200 font-bold">1. Self-Introduction & Spontaneous Speech:</label>
+          <select id="lt-speech" onchange="calculateDiagnosticLevel()" class="w-full bg-indigo-950 border border-indigo-700/60 rounded-xl p-2.5 text-indigo-100">
+            <option value="1">Level 1: Needs heavy prompting; single-word answers (Pre-A1)</option>
+            <option value="2">Level 2: Basic phrases; limited vocabulary (A1 Starter)</option>
+            <option value="3" selected>Level 3: Speaks in short full sentences with minor errors (A1 Elementary)</option>
+            <option value="4">Level 4: Good fluency; responds comfortably in paragraphs (A2 Intermediate)</option>
+            <option value="5">Level 5: Highly expressive; strong vocabulary and natural pacing (B1+ Upper)</option>
+          </select>
+        </div>
+
+        <div class="bg-indigo-900/60 p-3.5 rounded-2xl border border-indigo-800/80 space-y-2">
+          <label class="block text-indigo-200 font-bold">2. Sentence Construction & Grammar Control:</label>
+          <select id="lt-grammar" onchange="calculateDiagnosticLevel()" class="w-full bg-indigo-950 border border-indigo-700/60 rounded-xl p-2.5 text-indigo-100">
+            <option value="1">Level 1: Fails basic word order (e.g., "I play not ball")</option>
+            <option value="2">Level 2: Frequent tense & subject-verb agreement errors</option>
+            <option value="3" selected>Level 3: Understands present/past basic structure with occasional fixes</option>
+            <option value="4">Level 4: Accurate use of complex connectors (because, although, if)</option>
+            <option value="5">Level 5: Advanced sentence patterns, conditional structures & idioms</option>
+          </select>
+        </div>
+
+        <div class="bg-indigo-900/60 p-3.5 rounded-2xl border border-indigo-800/80 space-y-2">
+          <label class="block text-indigo-200 font-bold">3. Listening Comprehension & Response Speed:</label>
+          <select id="lt-listening" onchange="calculateDiagnosticLevel()" class="w-full bg-indigo-950 border border-indigo-700/60 rounded-xl p-2.5 text-indigo-100">
+            <option value="1">Level 1: Requires translation or visual gestures for context</option>
+            <option value="2">Level 2: Needs slow repetition of simple instructions</option>
+            <option value="3" selected>Level 3: Grasps normal speed classroom commands easily</option>
+            <option value="4">Level 4: Grasps multi-step questions without pause</option>
+            <option value="5">Level 5: Understands fast natural speech and abstract questions</option>
+          </select>
+        </div>
+
+        <div class="bg-indigo-900/60 p-3.5 rounded-2xl border border-indigo-800/80 space-y-2">
+          <label class="block text-indigo-200 font-bold">4. Reading Aloud & Phonetics (IPA / Pronunciation):</label>
+          <select id="lt-reading" onchange="calculateDiagnosticLevel()" class="w-full bg-indigo-950 border border-indigo-700/60 rounded-xl p-2.5 text-indigo-100">
+            <option value="1">Level 1: Recognizes letters & simple CVC words (cat, dog)</option>
+            <option value="2">Level 2: Reads simple sentences with frequent phonetic decoding</option>
+            <option value="3" selected>Level 3: Good reading fluency; minor pronunciation errors</option>
+            <option value="4">Level 4: Clear intonation, stress patterns & self-correction</option>
+            <option value="5">Level 5: Near-native pronunciation and expressive reading rhythm</option>
+          </select>
+        </div>
+
+        <!-- Calculated Level Output Banner -->
+        <div class="bg-gradient-to-r from-sky-900 to-indigo-900 border border-sky-400/50 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] text-sky-300 font-bold uppercase block">Diagnosed Level Result:</span>
+            <span id="diagnostic-result-text" class="text-xl font-extrabold text-amber-300">Level 2 (A1 Elementary)</span>
+          </div>
+          <button onclick="applyDiagnosticResult()" class="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-2xl text-xs shadow-lg transition-all">
+            Apply to Profile
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Authentication Modal Overlay -->
+  <div id="auth-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 hidden">
+    <div class="bg-indigo-950 border-2 border-amber-400/50 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      <div class="flex items-center gap-3 border-b border-indigo-800/60 pb-3">
+        <div class="p-2.5 bg-amber-500/20 text-amber-400 rounded-2xl">
+          <i data-lucide="lock" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white">Teacher Portal Authentication</h3>
+          <p class="text-xs text-indigo-300">Enter password to unlock this profile</p>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-indigo-300 mb-1">Target Profile:</label>
+        <div id="auth-teacher-name" class="text-sm font-bold text-amber-300 bg-indigo-900/80 px-3 py-2 rounded-2xl border border-indigo-800"></div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-indigo-300 mb-1">Enter Password:</label>
+        <input type="password" id="auth-password-input" onkeyup="if(event.key==='Enter') submitTeacherAuth()" placeholder="••••••••" class="w-full bg-indigo-900/80 border border-indigo-700/60 rounded-2xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400" />
+      </div>
+      <div id="auth-error" class="text-xs text-pink-400 hidden font-semibold">Incorrect password! Please try again.</div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button onclick="cancelTeacherAuth()" class="px-4 py-2 rounded-2xl text-xs font-bold text-indigo-300 hover:text-white bg-indigo-900 hover:bg-indigo-800 transition-all">Cancel</button>
+        <button onclick="submitTeacherAuth()" class="px-4 py-2 rounded-2xl text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 transition-all shadow-lg">Unlock Portal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Bar & Multi-Teacher Selector -->
+  <header class="no-print bg-indigo-950/90 backdrop-blur-md border-b border-indigo-800/50 sticky top-0 z-50 shadow-xl">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="bg-gradient-to-r from-pink-500 to-amber-400 text-slate-950 px-3.5 py-2 rounded-2xl font-black text-base flex items-center gap-2 shadow-lg">
+          <i data-lucide="star" class="w-5 h-5 fill-slate-950"></i>
+          <span>i-SHEPHERD FUN</span>
+        </div>
+
+        <!-- Password Protected Teacher Selector -->
+        <div class="flex items-center gap-1.5 bg-indigo-900/80 px-3 py-1.5 rounded-2xl border border-indigo-700/60 shadow-inner">
+          <i data-lucide="lock" class="w-4 h-4 text-amber-400"></i>
+          <span class="text-xs text-indigo-300 font-semibold uppercase">Teacher:</span>
+          <select id="teacher-selector" onchange="requestTeacherSwitch(this.value)" class="bg-transparent text-amber-300 font-bold text-xs sm:text-sm focus:outline-none cursor-pointer">
+          </select>
+          <button onclick="createNewTeacher()" title="Add New Protected Teacher Profile" class="bg-pink-500 hover:bg-pink-400 text-white p-1.5 rounded-xl transition-all ml-1 shadow">
+            <i data-lucide="plus" class="w-3.5 h-3.5 font-bold"></i>
+          </button>
+        </div>
+        
+        <!-- Student Selector -->
+        <div class="flex items-center gap-1.5 bg-indigo-900/80 px-3 py-1.5 rounded-2xl border border-indigo-700/60 shadow-inner">
+          <i data-lucide="smile" class="w-4 h-4 text-sky-400"></i>
+          <span class="text-xs text-indigo-300 font-semibold uppercase">Student:</span>
+          <select id="student-selector" onchange="switchStudentProfile(this.value)" class="bg-transparent text-sky-300 font-bold text-xs sm:text-sm focus:outline-none cursor-pointer">
+          </select>
+          <button onclick="createNewProfile()" title="Add New Student" class="bg-sky-500 hover:bg-sky-400 text-white p-1.5 rounded-xl transition-all ml-1 shadow">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <nav class="flex items-center bg-indigo-900/80 p-1.5 rounded-2xl border border-indigo-700/60">
+        <button onclick="switchTab('report')" id="tab-btn-report" class="tab-btn active px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md">
+          <i data-lucide="sparkles" class="w-4 h-4"></i> Class Report
+        </button>
+        <button onclick="switchTab('attendance')" id="tab-btn-attendance" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all text-indigo-200 hover:text-white">
+          <i data-lucide="calendar-check" class="w-4 h-4 text-amber-400"></i> Attendance
+        </button>
+        <button onclick="switchTab('progress')" id="tab-btn-progress" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all text-indigo-200 hover:text-white">
+          <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400"></i> Progress & Analytics
+        </button>
+        <button onclick="switchTab('profile')" id="tab-btn-profile" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all text-indigo-200 hover:text-white">
+          <i data-lucide="trophy" class="w-4 h-4 text-amber-300"></i> Profile & Rewards
+        </button>
+        <button onclick="switchTab('rubric')" id="tab-btn-rubric" class="tab-btn px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all text-indigo-200 hover:text-white">
+          <i data-lucide="award" class="w-4 h-4 text-sky-300"></i> Rubric
+        </button>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <button onclick="exportDatabase()" title="Backup Database (JSON)" class="bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-700/60 px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all shadow">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i> Export
+        </button>
+        <label title="Import Backup JSON" class="bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-700/60 px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Import
+          <input type="file" accept=".json" onchange="importDatabase(event)" class="hidden" />
+        </label>
+        <button onclick="downloadActiveTabJpg()" title="Download Active Tab as JPG" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 sm:px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg">
+          <i data-lucide="image" class="w-4 h-4"></i> Download JPG
+        </button>
+        <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 sm:px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg">
+          <i data-lucide="printer" class="w-4 h-4"></i> Print PDF
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 mt-6 print-container">
+
+    <!-- CATEGORY 1: CLASS REPORT (FRONT PAGE) -->
+    <section id="category-report" class="tab-content block space-y-6">
+      
+      <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-6 shadow-2xl relative overflow-hidden backdrop-blur-sm">
+        <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <div class="inline-flex items-center gap-2 px-3.5 py-1 bg-pink-500/20 text-pink-300 border border-pink-500/40 rounded-full text-xs font-bold uppercase tracking-wider shadow">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Fun English Adventure
+              </div>
+
+              <!-- FRONT PAGE LEVEL TEST BUTTON -->
+              <button onclick="openLevelTestModal()" class="exclude-jpg no-print inline-flex items-center gap-1.5 px-3.5 py-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-full text-xs transition-all shadow-md">
+                <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i> Level Test
+              </button>
+            </div>
+
+            <h1 class="text-3xl font-black text-white tracking-tight flex items-center gap-2">
+              <span>🌟 CLASS REPORT 🌟</span>
+            </h1>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-indigo-100 pt-2">
+              <p><span class="text-indigo-300">Name:</span> <strong class="text-white sync-field" data-key="englishName" contenteditable="true" oninput="handleSyncInput(this)">-</strong></p>
+              <p><span class="text-indigo-300">Date & Time:</span> <strong class="text-white sync-field" data-key="classDateTime" contenteditable="true" oninput="handleSyncInput(this)">-</strong></p>
+              <p><span class="text-indigo-300">Topic:</span> <strong class="text-amber-300 sync-field" data-key="classTopic" contenteditable="true" oninput="handleSyncInput(this)">-</strong></p>
+            </div>
+          </div>
+
+          <!-- Dynamic Score Cards & Session Logger -->
+          <div class="flex flex-col gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-indigo-950/80 p-3.5 rounded-2xl border border-indigo-800/80 text-xs">
+              <div id="card-conn" class="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all">
+                <i data-lucide="wifi" class="w-4 h-4"></i>
+                <div>
+                  <span class="block text-[10px] opacity-80">Connectivity</span>
+                  <span id="badge-conn" class="font-black">5 / 5 Excellent</span>
+                </div>
+              </div>
+              <div id="card-eng" class="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all">
+                <i data-lucide="ear" class="w-4 h-4"></i>
+                <div>
+                  <span class="block text-[10px] opacity-80">Engage</span>
+                  <span id="badge-eng" class="font-black">5 / 5 Excellent</span>
+                </div>
+              </div>
+              <div id="card-comp" class="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all">
+                <i data-lucide="brain" class="w-4 h-4"></i>
+                <div>
+                  <span class="block text-[10px] opacity-80">Comprehension</span>
+                  <span id="badge-comp" class="font-black">4 / 5 Good</span>
+                </div>
+              </div>
+              <div id="card-spk" class="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all">
+                <i data-lucide="message-square" class="w-4 h-4"></i>
+                <div>
+                  <span class="block text-[10px] opacity-80">Speaking</span>
+                  <span id="badge-spk" class="font-black">4 / 5 Good</span>
+                </div>
+              </div>
+              <div id="card-tsk" class="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all">
+                <i data-lucide="check-square" class="w-4 h-4"></i>
+                <div>
+                  <span class="block text-[10px] opacity-80">Tasks</span>
+                  <span id="badge-tsk" class="font-black">5 / 5 Excellent</span>
+                </div>
+              </div>
+              <div id="card-beh" class="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all">
+                <i data-lucide="smile" class="w-4 h-4"></i>
+                <div>
+                  <span class="block text-[10px] opacity-80">Behavior</span>
+                  <span id="badge-beh" class="font-black">5 / 5 Exemplary</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Comprehensive Save Session Button -->
+            <button onclick="saveCurrentSessionToHistory()" class="exclude-jpg no-print bg-gradient-to-r from-pink-500 to-amber-400 hover:from-pink-400 hover:to-amber-300 text-slate-950 font-extrabold px-4 py-2.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all shadow-xl">
+              <i data-lucide="save" class="w-4.5 h-4.5"></i> Save & Archive Class Record
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROMINENT HIGHLIGHTED OVERALL SCORE PERFORMANCE BANNER -->
+      <div class="bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-pink-900/90 border-2 border-amber-400/60 rounded-3xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm">
+        <div class="flex items-center gap-4 text-center md:text-left">
+          <div class="p-4 bg-gradient-to-tr from-amber-400 to-pink-500 text-slate-950 rounded-2xl shadow-xl flex-shrink-0 animate-bounce">
+            <i data-lucide="trophy" class="w-10 h-10"></i>
+          </div>
+          <div>
+            <div class="text-xs uppercase tracking-widest text-amber-300 font-extrabold flex items-center gap-1.5 justify-center md:justify-start">
+              <i data-lucide="star" class="w-4 h-4 fill-amber-300"></i> Overall Star Score Performance (综合表现总分)
+            </div>
+            <h2 id="report-total-score-display" class="text-4xl font-black text-amber-300 tracking-tight mt-1">28 / 30 Points</h2>
+            <p id="report-rating-display" class="text-sm font-bold text-pink-200 mt-0.5">5 Stars (★★★★★) — Fantastic Job!</p>
+          </div>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <button onclick="switchTab('rubric')" class="exclude-jpg no-print w-full sm:w-auto px-5 py-3 bg-indigo-950/80 hover:bg-indigo-900 text-amber-300 border border-amber-400/40 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md">
+            <i data-lucide="calculator" class="w-4 h-4"></i> Rubric Breakdown
+          </button>
+          <button onclick="saveCurrentSessionToHistory()" class="exclude-jpg no-print w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-amber-400 to-pink-500 hover:from-amber-300 hover:to-pink-400 text-slate-950 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-xl whitespace-nowrap">
+            <i data-lucide="save" class="w-4 h-4"></i> Save Record
+          </button>
+        </div>
+      </div>
+
+      <!-- AI TOPIC SUGGESTION TOOLBOX -->
+      <div class="exclude-jpg no-print bg-indigo-900/60 border border-pink-500/40 rounded-3xl p-4 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-sm">
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-pink-500/20 text-pink-400 rounded-2xl shadow">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
+              <span>AI Topic Suggestion Assistant</span>
+              <span class="text-[10px] bg-pink-500/30 text-pink-200 px-2.5 py-0.5 rounded-full font-semibold">5+ Fun Examples</span>
+            </h3>
+            <p class="text-xs text-indigo-200">Generate wonderful conversation sentences and vocab words tailored to your topic!</p>
+          </div>
+        </div>
+        <button onclick="generateTopicSuggestions()" id="ai-suggest-btn" class="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all shadow-lg whitespace-nowrap">
+          <i data-lucide="wand-2" class="w-4 h-4"></i> Generate Fun Sentences & Vocab
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 flex flex-col space-y-4 shadow-xl backdrop-blur-sm">
+          <div class="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+            <h2 class="text-lg font-bold text-sky-300 flex items-center gap-2">
+              <i data-lucide="pen-tool" class="w-5 h-5"></i> Sentence Construction
+            </h2>
+            <button onclick="addSentenceRow()" class="exclude-jpg no-print text-xs bg-indigo-950 hover:bg-indigo-800 text-sky-200 border border-indigo-700 px-3 py-1 rounded-xl shadow">+ Add Blank</button>
+          </div>
+
+          <!-- AUTO SENTENCE GRAMMAR & TRANSLATE TOOLBOX -->
+          <div class="exclude-jpg no-print bg-indigo-950/80 p-3 rounded-2xl border border-indigo-800/80 space-y-2">
+            <label class="block text-[11px] font-bold text-sky-300 flex items-center gap-1">
+              <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Auto Grammar Corrector & Chinese Translator:
+            </label>
+            <div class="flex flex-col gap-2">
+              <input type="text" id="auto-sentence-input" onkeyup="if(event.key==='Enter') fetchAndAddSentence()" placeholder="Type student's sentence..." class="w-full bg-indigo-900/80 border border-indigo-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-400" />
+              <button onclick="fetchAndAddSentence()" id="auto-sentence-btn" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-1.5">
+                <span>Check Grammar & Translate</span> <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <p id="sentence-status-msg" class="text-[10px] text-indigo-300 italic hidden"></p>
+          </div>
+
+          <div id="sentence-list" class="space-y-3 text-xs overflow-y-auto max-h-[500px] pr-1"></div>
+        </div>
+
+        <div class="lg:col-span-4 bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 flex flex-col space-y-4 shadow-xl backdrop-blur-sm">
+          <div class="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+            <h2 class="text-lg font-bold text-pink-300 flex items-center gap-2">
+              <i data-lucide="book-open" class="w-5 h-5"></i> Vocabulary Fun
+            </h2>
+            <button onclick="addVocabRow()" class="exclude-jpg no-print text-xs bg-indigo-950 hover:bg-indigo-800 text-pink-200 border border-indigo-700 px-3 py-1 rounded-xl shadow">+ Add Blank</button>
+          </div>
+
+          <!-- AUTO TRANSLATION & IPA TOOLBOX -->
+          <div class="exclude-jpg no-print bg-indigo-950/80 p-3 rounded-2xl border border-indigo-800/80 space-y-2">
+            <label class="block text-[11px] font-bold text-pink-300 flex items-center gap-1">
+              <i data-lucide="languages" class="w-3.5 h-3.5"></i> Auto-Translate Word & IPA Generator:
+            </label>
+            <div class="flex items-center gap-2">
+              <input type="text" id="auto-vocab-input" onkeyup="if(event.key==='Enter') fetchAndAddVocab()" placeholder="Type English word..." class="w-full bg-indigo-900/80 border border-indigo-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-400" />
+              <button onclick="fetchAndAddVocab()" id="auto-vocab-btn" class="bg-pink-500 hover:bg-pink-400 text-white font-bold px-3 py-2 rounded-xl text-xs whitespace-nowrap transition-all shadow-md flex items-center gap-1">
+                <span>Translate</span> <i data-lucide="sparkles" class="w-3 h-3"></i>
+              </button>
+            </div>
+            <p id="vocab-status-msg" class="text-[10px] text-indigo-300 italic hidden"></p>
+          </div>
+
+          <div id="vocab-grid" class="grid grid-cols-1 gap-3 text-xs overflow-y-auto max-h-[500px] pr-1"></div>
+        </div>
+
+        <div class="lg:col-span-3 space-y-4">
+          <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-4 text-center space-y-3 shadow-xl backdrop-blur-sm">
+            <h3 class="exclude-jpg text-xs font-bold uppercase tracking-wider text-indigo-300">Fun Lesson Photo Frames</h3>
+            
+            <!-- Frame 1 with Delete Button -->
+            <div class="drop-zone relative bg-indigo-950 border-2 border-dashed border-indigo-700 hover:border-pink-400 rounded-2xl overflow-hidden aspect-video flex flex-col items-center justify-center cursor-pointer transition-all shadow-inner" data-target="frame1">
+              <input type="file" accept="image/*" onchange="previewImage(event, 'frame1')" class="absolute inset-0 opacity-0 cursor-pointer z-10" />
+              <img id="frame1" class="hidden w-full h-full object-cover" />
+              <button onclick="event.stopPropagation(); deleteImage('frame1')" id="frame1-delete" class="exclude-jpg no-print absolute top-1 right-1 bg-slate-950/80 hover:bg-pink-600 text-slate-300 hover:text-white p-1 rounded-lg text-[10px] font-bold z-20 hidden shadow" title="Delete Photo">✕</button>
+              <div id="frame1-placeholder" class="flex flex-col items-center gap-1 text-indigo-300 p-2 pointer-events-none">
+                <i data-lucide="camera" class="w-6 h-6 text-sky-400"></i>
+                <span class="text-[11px] font-medium text-indigo-200">Drag Teacher Cam</span>
+              </div>
+            </div>
+
+            <!-- Frame 2 with Delete Button -->
+            <div class="drop-zone relative bg-indigo-950 border-2 border-dashed border-indigo-700 hover:border-pink-400 rounded-2xl overflow-hidden aspect-video flex flex-col items-center justify-center cursor-pointer transition-all shadow-inner" data-target="frame2">
+              <input type="file" accept="image/*" onchange="previewImage(event, 'frame2')" class="absolute inset-0 opacity-0 cursor-pointer z-10" />
+              <img id="frame2" class="hidden w-full h-full object-cover" />
+              <button onclick="event.stopPropagation(); deleteImage('frame2')" id="frame2-delete" class="exclude-jpg no-print absolute top-1 right-1 bg-slate-950/80 hover:bg-pink-600 text-slate-300 hover:text-white p-1 rounded-lg text-[10px] font-bold z-20 hidden shadow" title="Delete Photo">✕</button>
+              <div id="frame2-placeholder" class="flex flex-col items-center gap-1 text-indigo-300 p-2 pointer-events-none">
+                <i data-lucide="smile" class="w-6 h-6 text-emerald-400"></i>
+                <span class="text-[11px] font-medium text-indigo-200">Drag Student Cam</span>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-indigo-800 text-left">
+              <div class="flex items-center justify-between text-xs bg-indigo-950/80 p-3 rounded-2xl border border-indigo-800">
+                <span class="text-indigo-300 font-semibold">Remaining Classes:</span>
+                <strong class="text-emerald-400 text-sm sync-field" data-key="remainingClasses" contenteditable="false">-</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY 2: ATTENDANCE TRACKER WITH DRAG & DROP PROOF SCREENSHOT UPLOADER -->
+    <section id="category-attendance" class="tab-content hidden space-y-6">
+      
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 shadow-xl flex items-center justify-between backdrop-blur-sm">
+          <div>
+            <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider block">Present (P)</span>
+            <span id="att-count-p" class="text-3xl font-black text-emerald-400">0</span>
+          </div>
+          <div class="p-3 bg-emerald-500/20 text-emerald-300 rounded-2xl shadow">
+            <i data-lucide="check-circle" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 shadow-xl flex items-center justify-between backdrop-blur-sm">
+          <div>
+            <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider block">Absent (A)</span>
+            <span id="att-count-a" class="text-3xl font-black text-pink-400">0</span>
+          </div>
+          <div class="p-3 bg-pink-500/20 text-pink-300 rounded-2xl shadow">
+            <i data-lucide="x-circle" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 shadow-xl flex items-center justify-between backdrop-blur-sm">
+          <div>
+            <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider block">Late (L)</span>
+            <span id="att-count-l" class="text-3xl font-black text-amber-300">0</span>
+          </div>
+          <div class="p-3 bg-amber-500/20 text-amber-300 rounded-2xl shadow">
+            <i data-lucide="clock" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 shadow-xl flex items-center justify-between backdrop-blur-sm">
+          <div>
+            <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider block">Excused (E)</span>
+            <span id="att-count-e" class="text-3xl font-black text-sky-400">0</span>
+          </div>
+          <div class="p-3 bg-sky-500/20 text-sky-300 rounded-2xl shadow">
+            <i data-lucide="file-text" class="w-6 h-6"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Add Record Box with Clickable Calendar Picker & Drag-and-Drop Proof Uploader -->
+      <div class="exclude-jpg bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-6 shadow-xl space-y-4 backdrop-blur-sm">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2 border-b border-indigo-800/60 pb-3">
+          <i data-lucide="calendar-plus" class="w-5 h-5 text-amber-300"></i> Mark Attendance Status & Upload Proof
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+          
+          <!-- CLICKABLE CALENDAR INPUT -->
+          <div class="sm:col-span-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-semibold text-indigo-300 flex items-center gap-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-amber-300"></i> Select Date
+              </label>
+              <button onclick="setAttendanceDateToToday()" class="text-[10px] bg-indigo-950 hover:bg-indigo-800 text-amber-300 px-2.5 py-0.5 rounded-xl font-semibold transition-all">
+                Today
+              </button>
+            </div>
+            <div class="relative flex items-center">
+              <input type="date" id="att-input-date" onclick="this.showPicker ? this.showPicker() : null" class="w-full bg-indigo-950 border border-indigo-700/80 rounded-2xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-amber-300 cursor-pointer" />
+            </div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-indigo-300 mb-1">Status</label>
+            <select id="att-input-status" class="w-full bg-indigo-950 border border-indigo-700/80 rounded-2xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-amber-300">
+              <option value="P">Present (P)</option>
+              <option value="A">Absent (A)</option>
+              <option value="L">Late (L)</option>
+              <option value="E">Excused (E)</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-3">
+            <label class="block text-xs font-semibold text-indigo-300 mb-1">Notes / Reason (Optional)</label>
+            <input type="text" id="att-input-notes" placeholder="e.g. Great participation!" class="w-full bg-indigo-950 border border-indigo-700/80 rounded-2xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-amber-300" />
+          </div>
+
+          <!-- QUICK DRAG AND DROP PROOF SCREENSHOT CONTAINER -->
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-amber-300 mb-1 flex items-center gap-1">
+              <i data-lucide="paperclip" class="w-3.5 h-3.5"></i> Proof Photo
+            </label>
+            <div id="att-proof-dropzone" class="drop-zone relative w-full bg-indigo-950 hover:bg-indigo-900 border-2 border-dashed border-amber-400/60 rounded-2xl px-3 py-2 text-xs text-amber-200 font-semibold flex items-center justify-center cursor-pointer transition-all min-h-[42px]" data-target="att-proof">
+              <input type="file" id="att-input-proof" accept="image/*,.pdf" onchange="handleProofFileSelect(event)" class="absolute inset-0 opacity-0 cursor-pointer z-10" />
+              <div id="att-proof-placeholder" class="flex items-center gap-1.5 pointer-events-none overflow-hidden text-ellipsis">
+                <i data-lucide="upload-cloud" class="w-4 h-4 text-amber-300 flex-shrink-0"></i>
+                <span id="att-proof-text" class="truncate text-[11px]">Drag File / Photo</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <button onclick="addAttendanceRecord()" class="w-full bg-gradient-to-r from-amber-400 to-pink-500 hover:from-amber-300 hover:to-pink-400 text-slate-950 font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-lg">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i> Save Status
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendance History Log -->
+      <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-6 shadow-xl space-y-4 backdrop-blur-sm">
+        <div class="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="list" class="w-5 h-5 text-emerald-400"></i> Attendance Log History
+            </h2>
+            <p class="text-xs text-indigo-300">Records log for active student profile. Click dates or thumbnails to preview confirmation proof.</p>
+          </div>
+          <button onclick="clearAttendanceHistory()" class="exclude-jpg no-print text-xs bg-pink-950/80 hover:bg-pink-900 text-pink-300 border border-pink-700 px-3.5 py-1.5 rounded-xl transition-all shadow">Clear Attendance Records</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-indigo-100 border-collapse">
+            <thead class="bg-indigo-950 text-indigo-300 border-b border-indigo-800 uppercase tracking-wider">
+              <tr>
+                <th class="p-3">Date (Clickable)</th>
+                <th class="p-3 text-center">Status</th>
+                <th class="p-3">Notes</th>
+                <th class="p-3 text-center">Confirmation Proof</th>
+                <th class="p-3 text-center no-print">Action</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-history-tbody" class="divide-y divide-indigo-800/40">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- CATEGORY 3: PROGRESS MONITORING & ANALYTICS -->
+    <section id="category-progress" class="tab-content hidden space-y-6">
+      
+      <!-- Analytics Summary Row -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 shadow-xl flex items-center justify-between backdrop-blur-sm">
+          <div>
+            <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider block">
+              Total Logged Sessions <br><span class="text-amber-300 font-semibold text-[11px]">已记录课程总数</span>
+            </span>
+            <span id="analytics-total-sessions" class="text-3xl font-black text-amber-300 mt-1 block">0</span>
+          </div>
+          <div class="p-3 bg-amber-500/20 text-amber-300 rounded-2xl shadow">
+            <i data-lucide="calendar" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 shadow-xl flex items-center justify-between backdrop-blur-sm">
+          <div>
+            <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider block">
+              Average Points Score <br><span class="text-emerald-300 font-semibold text-[11px]">平均得分</span>
+            </span>
+            <span id="analytics-avg-score" class="text-3xl font-black text-emerald-400 mt-1 block">0.0 / 30</span>
+          </div>
+          <div class="p-3 bg-emerald-500/20 text-emerald-300 rounded-2xl shadow">
+            <i data-lucide="award" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 shadow-xl flex items-center justify-between backdrop-blur-sm">
+          <div>
+            <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider block">
+              Strongest Skill Area <br><span class="text-sky-300 font-semibold text-[11px]">最强技能领域</span>
+            </span>
+            <span id="analytics-strong-skill" class="text-base font-extrabold text-sky-300 mt-1 block">N/A</span>
+          </div>
+          <div class="p-3 bg-sky-500/20 text-sky-300 rounded-2xl shadow">
+            <i data-lucide="zap" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 shadow-xl flex items-center justify-between backdrop-blur-sm">
+          <div>
+            <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider block">
+              Skill Focus Target <br><span class="text-pink-300 font-semibold text-[11px]">需提升目标技能</span>
+            </span>
+            <span id="analytics-focus-skill" class="text-base font-extrabold text-pink-300 mt-1 block">N/A</span>
+          </div>
+          <div class="p-3 bg-pink-500/20 text-pink-300 rounded-2xl shadow">
+            <i data-lucide="target" class="w-6 h-6"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <div class="lg:col-span-8 bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-6 shadow-xl space-y-4 backdrop-blur-sm">
+          <div class="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-5 h-5 text-amber-300"></i> Overall Score Trend Over Time
+              </h2>
+              <span class="text-xs text-amber-300 font-semibold">总体分数变化趋势</span>
+            </div>
+            <span class="text-xs text-indigo-300">Max Score / 最高分: 30 Points</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="progressTrendChart"></canvas>
+          </div>
+        </div>
+
+        <div class="lg:col-span-4 bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-6 shadow-xl space-y-4 backdrop-blur-sm">
+          <div class="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-5 h-5 text-sky-300"></i> Skill Radar Competency
+              </h2>
+              <span class="text-xs text-sky-300 font-semibold">技能雷达图胜任力分析</span>
+            </div>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="progressRadarChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Detailed Session-by-Session Breakdown & Insights (Did / Didn't do, Strengths, Weaknesses, Suggestions) -->
+      <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-6 shadow-xl space-y-6 backdrop-blur-sm">
+        <div class="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="clipboard-check" class="w-5 h-5 text-pink-400"></i> Comprehensive Session Performance & Behavioral Insights
+            </h2>
+            <p class="text-xs text-pink-300 font-semibold">详细课程表现与行为洞察：课堂表现、强项、弱项、改进建议及保持项</p>
+          </div>
+          <span class="text-xs text-indigo-300">Auto-analyzed from session logs</span>
+        </div>
+
+        <div id="detailed-session-insights-container" class="space-y-4">
+          <!-- Dynamically populated session insight cards -->
+        </div>
+      </div>
+
+      <!-- Session Log Table -->
+      <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-6 shadow-xl space-y-4 backdrop-blur-sm">
+        <div class="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="history" class="w-5 h-5 text-emerald-400"></i> Conducted Class Sessions History Log
+            </h2>
+            <p class="text-xs text-emerald-300 font-semibold">上课历史记录日志 - 点击任意记录可重载至主报告</p>
+          </div>
+          <button onclick="clearStudentHistory()" class="exclude-jpg no-print text-xs bg-pink-950/80 hover:bg-pink-900 text-pink-300 border border-pink-700 px-3.5 py-1.5 rounded-xl transition-all shadow">Clear History Log / 清空历史记录</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-indigo-100 border-collapse">
+            <thead class="bg-indigo-950 text-indigo-300 border-b border-indigo-800 uppercase tracking-wider">
+              <tr>
+                <th class="p-3">Date / Session<br><span class="text-[10px] font-normal text-indigo-400">课程日期</span></th>
+                <th class="p-3">Lesson Topic<br><span class="text-[10px] font-normal text-indigo-400">课程主题</span></th>
+                <th class="p-3 text-center">Conn<br><span class="text-[10px] font-normal text-indigo-400">连接</span></th>
+                <th class="p-3 text-center">Eng<br><span class="text-[10px] font-normal text-indigo-400">参与</span></th>
+                <th class="p-3 text-center">Comp<br><span class="text-[10px] font-normal text-indigo-400">理解</span></th>
+                <th class="p-3 text-center">Spk<br><span class="text-[10px] font-normal text-indigo-400">口语</span></th>
+                <th class="p-3 text-center">Tsk<br><span class="text-[10px] font-normal text-indigo-400">任务</span></th>
+                <th class="p-3 text-center">Beh<br><span class="text-[10px] font-normal text-indigo-400">行为</span></th>
+                <th class="p-3 text-center font-bold text-amber-300">Total Score<br><span class="text-[10px] font-normal text-amber-200/70">总分</span></th>
+                <th class="p-3 text-center no-print">Actions<br><span class="text-[10px] font-normal text-indigo-400">操作</span></th>
+              </tr>
+            </thead>
+            <tbody id="progress-history-tbody" class="divide-y divide-indigo-800/40">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- CATEGORY 4: STUDENT PROFILE & REWARD BOARD -->
+    <section id="category-profile" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-4 space-y-6">
+          <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 text-center space-y-3 shadow-xl backdrop-blur-sm">
+            <h2 class="text-xs font-bold text-indigo-300 uppercase tracking-widest">Student Avatar</h2>
+            
+            <!-- Avatar Frame with Delete Button -->
+            <div class="drop-zone relative mx-auto w-36 h-36 bg-indigo-950 border-2 border-dashed border-pink-400/50 hover:border-pink-300 rounded-3xl overflow-hidden flex flex-col items-center justify-center cursor-pointer transition-all shadow-inner" data-target="avatar-img">
+              <input type="file" accept="image/*" onchange="previewImage(event, 'avatar-img')" class="absolute inset-0 opacity-0 cursor-pointer z-10" />
+              <img id="avatar-img" class="hidden w-full h-full object-cover" />
+              <button onclick="event.stopPropagation(); deleteImage('avatar-img')" id="avatar-img-delete" class="exclude-jpg no-print absolute top-1 right-1 bg-slate-950/80 hover:bg-pink-600 text-slate-300 hover:text-white p-1 rounded-lg text-[10px] font-bold z-20 hidden shadow" title="Delete Avatar">✕</button>
+              <div id="avatar-img-placeholder" class="flex flex-col items-center gap-2 text-indigo-300 pointer-events-none">
+                <i data-lucide="image-plus" class="w-8 h-8 text-pink-400"></i>
+                <span class="text-xs font-medium text-indigo-200">Drag & Drop Photo</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-sm">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2 border-b border-indigo-800/60 pb-3">
+              <i data-lucide="id-card" class="w-5 h-5 text-sky-300"></i> Student Info
+            </h2>
+            <div class="space-y-3 text-xs">
+              <div class="grid grid-cols-2 gap-2 bg-indigo-950 p-3 rounded-2xl border border-indigo-800/80">
+                <div><span class="text-indigo-300 block">English Name:</span><strong class="text-white text-sm sync-field" data-key="englishName" contenteditable="true" oninput="handleSyncInput(this)">-</strong></div>
+                <div><span class="text-indigo-300 block">Chinese Name:</span><strong class="text-white text-sm sync-field" data-key="chineseName" contenteditable="true" oninput="handleSyncInput(this)">-</strong></div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 bg-indigo-950 p-3 rounded-2xl border border-indigo-800/80">
+                <div><span class="text-indigo-300 block">Birthday:</span><strong class="text-indigo-100 sync-field" data-key="birthday" contenteditable="true" oninput="handleSyncInput(this)">-</strong></div>
+                <div><span class="text-indigo-300 block">Age / Grade:</span><strong class="text-indigo-100 sync-field" data-key="ageGrade" contenteditable="true" oninput="handleSyncInput(this)">-</strong></div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 bg-indigo-950 p-3 rounded-2xl border border-indigo-800/80">
+                <div><span class="text-indigo-300 block">Level:</span><strong class="text-amber-300 font-bold sync-field" data-key="level" contenteditable="true" oninput="handleSyncInput(this)">-</strong></div>
+                <div><span class="text-indigo-300 block">Residence:</span><strong class="text-indigo-100 sync-field" data-key="residence" contenteditable="true" oninput="handleSyncInput(this)">-</strong></div>
+              </div>
+
+              <!-- CLASSES AVAILED, CLASS CONSUMED & PACKAGE START DATE -->
+              <div class="grid grid-cols-3 gap-2 bg-indigo-950 p-3 rounded-2xl border border-indigo-800/80">
+                <div>
+                  <span class="text-indigo-300 block text-[10px]">Availed:</span>
+                  <strong class="text-emerald-400 font-bold sync-field" data-key="classesAvailed" contenteditable="true" oninput="handleSyncInput(this)">-</strong>
+                </div>
+                <div>
+                  <span class="text-indigo-300 block text-[10px]">Consumed:</span>
+                  <strong class="text-amber-300 font-bold sync-field" data-key="classConsumed" contenteditable="true" oninput="handleSyncInput(this)">-</strong>
+                </div>
+                <div>
+                  <span class="text-indigo-300 block text-[10px]">Start Date:</span>
+                  <strong class="text-sky-300 font-bold sync-field" data-key="packageStartDate" contenteditable="true" oninput="handleSyncInput(this)">-</strong>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="space-y-3 text-xs pt-2">
+              <div class="bg-indigo-950 p-3.5 rounded-2xl border border-indigo-800/80 space-y-1">
+                <span class="text-sky-300 font-bold block flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5"></i> Hobbies:</span>
+                <p class="text-indigo-200 sync-field" data-key="hobbies" contenteditable="true" oninput="handleSyncInput(this)">-</p>
+              </div>
+              <div class="bg-indigo-950 p-3.5 rounded-2xl border border-indigo-800/80 space-y-1">
+                <span class="text-emerald-400 font-bold block flex items-center gap-1"><i data-lucide="thumbs-up" class="w-3.5 h-3.5"></i> Likes & Dislikes:</span>
+                <p class="text-indigo-200 sync-field" data-key="likesDislikes" contenteditable="true" oninput="handleSyncInput(this)">-</p>
+              </div>
+              <div class="bg-indigo-950 p-3.5 rounded-2xl border border-indigo-800/80 space-y-1">
+                <span class="text-amber-300 font-bold block flex items-center gap-1"><i data-lucide="info" class="w-3.5 h-3.5"></i> Other Details:</span>
+                <p class="text-indigo-200 sync-field" data-key="otherDetails" contenteditable="true" oninput="handleSyncInput(this)">-</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-8 bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-6 shadow-xl flex flex-col justify-between space-y-6 backdrop-blur-sm">
+          <div class="space-y-6">
+            <div class="flex items-center justify-between border-b border-indigo-800/60 pb-4">
+              <div>
+                <h2 class="text-2xl font-black text-amber-300 tracking-wide flex items-center gap-2">
+                  <i data-lucide="trophy" class="w-7 h-7 text-amber-300"></i> REWARD BADGE BOARD
+                </h2>
+                <p class="text-xs text-indigo-300">Each frame represents a conducted session. Stars and dates automatically sync with your archived session history.</p>
+              </div>
+              <div class="text-right">
+                <span class="text-xs text-indigo-300">Attendance Track:</span>
+                <p class="text-xs font-bold text-emerald-400 sync-field" data-key="attendanceTrack" contenteditable="true" oninput="handleSyncInput(this)">-</p>
+              </div>
+            </div>
+
+            <!-- DYNAMIC 8 SESSION REWARD FRAMES -->
+            <div id="reward-board-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <!-- Dynamically rendered via JS to sync with history -->
+            </div>
+
+            <!-- 8-SESSION CLASS COVERAGE SUMMARY PANEL -->
+            <div class="bg-indigo-950 p-4 rounded-2xl border border-indigo-800/80 space-y-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                <i data-lucide="clipboard-list" class="w-4 h-4"></i> 8-Session Class Coverage Summary (8次课程覆盖摘要)
+              </h3>
+              <div id="eight-session-summary-container" class="space-y-2 text-xs divide-y divide-indigo-800/60">
+                <!-- Dynamically populated summary rows -->
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-indigo-950 p-4 rounded-2xl border border-indigo-800/80 flex justify-between items-center text-xs">
+            <span class="text-indigo-300">Overall Class Performance Score (Average across 8 covered sessions):</span>
+            <span id="profile-total-display" class="text-amber-300 font-bold text-sm">-- / 30 Points (Average)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY 5: DETAILED INTERACTIVE RUBRIC -->
+    <section id="category-rubric" class="tab-content hidden space-y-6">
+      <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-sm">
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="calculator" class="w-6 h-6 text-emerald-400"></i> Detailed Evaluation Rubric & Scoring Guide
+          </h2>
+          <p class="text-xs text-indigo-300 mt-1">Click any box across the 1–5 scale to score performance. Colors match exact result ratings.</p>
+        </div>
+
+        <div class="flex items-center gap-4 bg-indigo-950 px-6 py-3 rounded-2xl border border-indigo-800/80 shadow-inner">
+          <div class="text-right">
+            <span class="text-[10px] text-indigo-400 uppercase tracking-widest block font-bold">Total Points</span>
+            <span id="total-points" class="text-2xl font-black text-amber-300">28 / 30</span>
+          </div>
+          <div class="h-8 w-px bg-indigo-800"></div>
+          <div>
+            <span class="text-[10px] text-indigo-400 uppercase tracking-widest block font-bold">Overall Rating</span>
+            <span id="star-rating-display" class="text-2xl font-black text-amber-300">5 Stars (★★★★★)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-4 shadow-xl backdrop-blur-sm">
+        <h3 class="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <i data-lucide="bar-chart-2" class="w-4 h-4 text-amber-300"></i> Quick Point Conversion Rule (快速分数折算规则)
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+          <div class="bg-amber-950/40 border border-amber-500/50 p-3 rounded-2xl shadow">
+            <span class="text-amber-300 font-extrabold block text-sm">★★★★★ 5 Stars</span>
+            <span class="text-amber-200 font-bold">27 – 30 pts</span>
+            <span class="block text-[10px] text-amber-300/80 mt-0.5">5 - EXCELLENT (优秀)</span>
+          </div>
+          <div class="bg-emerald-950/40 border border-emerald-500/50 p-3 rounded-2xl shadow">
+            <span class="text-emerald-300 font-extrabold block text-sm">★★★★☆ 4 Stars</span>
+            <span class="text-emerald-200 font-bold">21 – 26 pts</span>
+            <span class="block text-[10px] text-emerald-300/80 mt-0.5">4 - GOOD (良好)</span>
+          </div>
+          <div class="bg-sky-950/40 border border-sky-500/50 p-3 rounded-2xl shadow">
+            <span class="text-sky-300 font-extrabold block text-sm">★★★☆☆ 3 Stars</span>
+            <span class="text-sky-200 font-bold">15 – 20 pts</span>
+            <span class="block text-[10px] text-sky-300/80 mt-0.5">3 - SATISFACTORY (达标)</span>
+          </div>
+          <div class="bg-orange-950/40 border border-orange-500/50 p-3 rounded-2xl shadow">
+            <span class="text-orange-300 font-extrabold block text-sm">★★☆☆☆ 2 Stars</span>
+            <span class="text-orange-200 font-bold">10 – 14 pts</span>
+            <span class="block text-[10px] text-orange-300/80 mt-0.5">2 - NEEDS IMP. (需改进)</span>
+          </div>
+          <div class="bg-pink-950/40 border border-pink-500/50 p-3 rounded-2xl shadow col-span-2 sm:col-span-1">
+            <span class="text-pink-300 font-extrabold block text-sm">★☆☆☆☆ 1 Star</span>
+            <span class="text-pink-200 font-bold">6 – 9 pts</span>
+            <span class="block text-[10px] text-pink-300/80 mt-0.5">1 - UNSATISFACTORY (不合格)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl overflow-hidden shadow-xl backdrop-blur-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-indigo-100 border-collapse">
+            <thead class="bg-indigo-950 border-b border-indigo-800 uppercase tracking-wider">
+              <tr>
+                <th class="p-4 w-1/6 text-indigo-300">Criteria (评估标准)</th>
+                <th class="p-3 text-center w-1/6 text-pink-400">1 - UNSATISFACTORY<br><span class="text-[10px] font-normal text-indigo-400">不合格</span></th>
+                <th class="p-3 text-center w-1/6 text-orange-400">2 - NEEDS IMP.<br><span class="text-[10px] font-normal text-indigo-400">需改进</span></th>
+                <th class="p-3 text-center w-1/6 text-sky-300">3 - SATISFACTORY<br><span class="text-[10px] font-normal text-indigo-400">达标/满意</span></th>
+                <th class="p-3 text-center w-1/6 text-emerald-400">4 - GOOD<br><span class="text-[10px] font-normal text-indigo-400">良好</span></th>
+                <th class="p-3 text-center w-1/6 text-amber-300 bg-amber-950/30">5 - EXCELLENT<br><span class="text-[10px] font-normal text-amber-200/70">优秀</span></th>
+              </tr>
+            </thead>
+            <tbody id="detailed-rubric-tbody" class="divide-y divide-indigo-800/60">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Global variable to hold temporary proof data during form input
+    let currentAttendanceProofData = null;
+
+    // Default Data Structure
+    const defaultTeachers = {
+      "Teacher Mark": {
+        password: "123",
+        students: {
+          "Lilian": {
+            englishName: "Lilian",
+            chineseName: "Liu Zixiao 刘梓潇",
+            classDateTime: "Saturday - Sep 19, 9:45 - 10:15",
+            classTopic: "37: Entertainment p45 (Teen Free Conversation)",
+            birthday: "May 16th",
+            ageGrade: "11 / 6th Grade",
+            level: "Level 2 (A1)",
+            residence: "Nanjing, Jiangsu",
+            classesAvailed: "96",
+            classConsumed: "10",
+            packageStartDate: "Sep 01, 2026",
+            remainingClasses: "86",
+            hobbies: "• Playing the piano\n• Jump rope\n• Swimming",
+            likesDislikes: "• Likes: Drawing, Chocolate cake, Pink\n• Dislikes: None specified",
+            otherDetails: "• Sister (2 years old)",
+            attendanceTrack: "09/08/26 (P) | 09/12/26 (P) | 09/19/26 (P)",
+            attendanceRecords: [
+              { date: "2026-09-08", status: "P", notes: "On time", proof: "" },
+              { date: "2026-09-12", status: "P", notes: "Active participation", proof: "" },
+              { date: "2026-09-19", status: "P", notes: "Great interaction", proof: "" }
+            ],
+            rewDate1: "09/08/26", rewDate2: "09/12/26", rewDate3: "09/19/26", rewDate4: "--/--/--",
+            rewDate5: "--/--/--", rewDate6: "--/--/--", rewDate7: "--/--/--", rewDate8: "--/--/--",
+            scores: { conn: 4, eng: 5, comp: 4, spk: 4, tsk: 5, beh: 5 },
+            sentences: [
+              { q: "(What are your favorite songs or artists?)", err: "❌ Taylor Swift", corr: "✅ My favorite artist is Taylor Swift." },
+              { q: "cruel:", err: "The bad dragon in the story was very cruel to the villagers.", corr: "(故事里的坏龙对村民非常残忍。)" }
+            ],
+            vocab: [
+              { term: "cruel", ipa: "/ˈkruːəl/", cn: "残忍的 / 严酷的", py: "" },
+              { term: "live performance", ipa: "/laɪv pəˈfɔːməns/", cn: "现场演出 / 现场表演", py: "" }
+            ],
+            history: [
+              {
+                date: "Sep 08, 2026",
+                topic: "35: Hobbies & Sports",
+                scores: { conn: 4, eng: 4, comp: 3, spk: 3, tsk: 4, beh: 5 },
+                total: 23,
+                sentences: [{ q: "Do you like swimming?", err: "❌ Yes I like", corr: "✅ Yes, I enjoy swimming very much." }],
+                vocab: [{ term: "hobby", ipa: "/ˈhɒbi/", cn: "业余爱好", py: "" }],
+                img_frame1: "", img_frame2: ""
+              },
+              {
+                date: "Sep 12, 2026",
+                topic: "36: Music & Movies",
+                scores: { conn: 5, eng: 5, comp: 4, spk: 3, tsk: 4, beh: 5 },
+                total: 26,
+                sentences: [{ q: "What movie do you like?", err: "❌ Harry Potter", corr: "✅ I like watching Harry Potter." }],
+                vocab: [{ term: "cinema", ipa: "/ˈsɪnəmɑː/", cn: "电影院", py: "" }],
+                img_frame1: "", img_frame2: ""
+              },
+              {
+                date: "Sep 19, 2026",
+                topic: "37: Entertainment p45",
+                scores: { conn: 4, eng: 5, comp: 4, spk: 4, tsk: 5, beh: 5 },
+                total: 27,
+                sentences: [
+                  { q: "(What are your favorite songs or artists?)", err: "❌ Taylor Swift", corr: "✅ My favorite artist is Taylor Swift." },
+                  { q: "cruel:", err: "The bad dragon in the story was very cruel to the villagers.", corr: "(故事里的坏龙对村民非常残忍。)" }
+                ],
+                vocab: [
+                  { term: "cruel", ipa: "/ˈkruːəl/", cn: "残忍/严酷", py: "" },
+                  { term: "live performance", ipa: "/laɪv pəˈfɔːməns/", cn: "现场表演", py: "" }
+                ],
+                img_frame1: "", img_frame2: ""
+              }
+            ]
+          }
+        }
+      }
+    };
+
+    let database = JSON.parse(localStorage.getItem('iShepherd_Progress_DB')) || defaultTeachers;
+    let currentTeacherKey = Object.keys(database)[0] || "Teacher Mark";
+    let pendingTeacherKey = "";
+    let currentStudentKey = Object.keys(database[currentTeacherKey].students)[0] || "Lilian";
+
+    let trendChartInstance = null;
+    let radarChartInstance = null;
+
+    const detailedRubricData = [
+      { key: 'conn', title: 'Connectivity (连接性)', sub: 'Wi-Fi & audio/video status' },
+      { key: 'eng', title: 'Engage (参与度)', sub: 'Focus & responsiveness' },
+      { key: 'comp', title: 'Comprehension (理解能力)', sub: 'Understanding & vocab use' },
+      { key: 'spk', title: 'Speaking (口语表达)', sub: 'Fluency & sentence output' },
+      { key: 'tsk', title: 'Tasks (任务完成)', sub: 'Activity accuracy & spelling' },
+      { key: 'beh', title: 'Behavior (行为表现)', sub: 'Conduct & participation' }
+    ];
+
+    const levelStyles = {
+      5: { label: 'Excellent', cardBg: 'bg-amber-950/40 border-amber-500/80 text-amber-300 shadow-amber-500/10', cellBorder: 'border-2 border-amber-400 bg-amber-950/50 text-amber-100 font-semibold shadow-lg shadow-amber-500/10' },
+      4: { label: 'Good', cardBg: 'bg-emerald-950/40 border-emerald-500/80 text-emerald-300 shadow-emerald-500/10', cellBorder: 'border-2 border-emerald-400 bg-emerald-950/50 text-emerald-100 font-semibold shadow-lg shadow-emerald-500/10' },
+      3: { label: 'Satisfactory', cardBg: 'bg-sky-950/40 border-sky-500/80 text-sky-300 shadow-sky-500/10', cellBorder: 'border-2 border-sky-400 bg-sky-950/50 text-sky-100 font-semibold shadow-lg shadow-sky-500/10' },
+      2: { label: 'Needs Imp.', cardBg: 'bg-orange-950/40 border-orange-500/80 text-orange-300 shadow-orange-500/10', cellBorder: 'border-2 border-orange-400 bg-orange-950/50 text-orange-100 font-semibold shadow-lg shadow-orange-500/10' },
+      1: { label: 'Unsatisfactory', cardBg: 'bg-pink-950/40 border-pink-500/80 text-pink-300 shadow-pink-500/10', cellBorder: 'border-2 border-pink-400 bg-pink-950/50 text-pink-100 font-semibold shadow-lg shadow-pink-500/10' }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      renderTeacherDropdown();
+      renderStudentDropdown();
+      renderDetailedRubricTable();
+      setAttendanceDateToToday();
+
+      loadStudentProfile(currentStudentKey);
+      initDragAndDrop();
+    });
+
+    /* DOWNLOAD ACTIVE TAB AS JPG FEATURE (Excluding elements marked with .exclude-jpg) */
+    function downloadActiveTabJpg() {
+      const activeTabContent = document.querySelector('.tab-content:not(.hidden)');
+      if (!activeTabContent) return;
+
+      const activeTabId = activeTabContent.id;
+      let tabName = "Class_Report";
+      if (activeTabId === 'category-profile') tabName = "Profile_and_Rewards";
+      else if (activeTabId === 'category-attendance') tabName = "Attendance_Log";
+      else if (activeTabId === 'category-progress') tabName = "Progress_Analytics";
+      else if (activeTabId === 'category-rubric') tabName = "Detailed_Rubric";
+
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      const studentName = student ? student.englishName : "Student";
+
+      // Temporarily hide elements with class 'exclude-jpg'
+      const excludedElements = activeTabContent.querySelectorAll('.exclude-jpg');
+      excludedElements.forEach(el => el.style.display = 'none');
+
+      html2canvas(activeTabContent, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#1e1b4b'
+      }).then(canvas => {
+        // Restore excluded elements
+        excludedElements.forEach(el => el.style.display = '');
+
+        const imageUri = canvas.toDataURL('image/jpeg', 0.95);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = imageUri;
+        downloadLink.download = `${studentName}_${tabName}.jpg`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+      }).catch(err => {
+        excludedElements.forEach(el => el.style.display = '');
+        console.error("Failed to generate JPG image:", err);
+        alert("Could not generate JPG image. Please try again.");
+      });
+    }
+
+    /* AI TOPIC SUGGESTION GENERATOR (5+ EXAMPLES) */
+    async function generateTopicSuggestions() {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!student) return;
+
+      const topic = student.classTopic || "General English Conversation";
+      const btn = document.getElementById('ai-suggest-btn');
+      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Generating 5+ Examples...`;
+      lucide.createIcons();
+
+      let suggestedSentences = [
+        { q: `What are your main thoughts regarding ${topic}?`, err: "❌ I think it is good because it make me happy.", corr: "✅ I believe it is wonderful because it brings me great joy." },
+        { q: `Can you share how you usually prepare for ${topic}?`, err: "❌ Always I do it in the weekend with my friend.", corr: "✅ I usually do it over the weekend with my friends." },
+        { q: `What challenges do people usually face with ${topic}?`, err: "❌ Sometimes is difficult to understand fast.", corr: "✅ Sometimes it can be quite challenging to grasp quickly." },
+        { q: `Would you recommend ${topic} to your classmates?`, err: "❌ Yes I will recommend because is very fun.", corr: "✅ Yes, I would highly recommend it because it is very entertaining." },
+        { q: `How has your understanding of ${topic} improved lately?`, err: "❌ I learn more words and speak better now.", corr: "✅ I have learned more vocabulary and can speak much more fluently now." }
+      ];
+
+      let suggestedVocab = [
+        { term: "fascinating", ipa: "/ˈfæsɪneɪtɪŋ/", cn: "极有趣的 / 迷人的", py: "" },
+        { term: "experience", ipa: "/ɪkˈspɪəriəns/", cn: "经验 / 体验", py: "" },
+        { term: "perspective", ipa: "/pəˈspektɪv/", cn: "观点 / 视角", py: "" },
+        { term: "significant", ipa: "/sɪɡˈnɪfɪkənt/", cn: "重大的 / 显著的", py: "" },
+        { term: "opportunity", ipa: "/ˌɒpəˈtjuːnəti/", cn: "机会 / 时机", py: "" }
+      ];
+
+      const lowerTopic = topic.toLowerCase();
+      if (lowerTopic.includes('music') || lowerTopic.includes('entertainment') || lowerTopic.includes('song')) {
+        suggestedSentences = [
+          { q: "What is your favorite genre of music to relax with?", err: "❌ My favorite song is pop music.", corr: "✅ My favorite genre of music is pop." },
+          { q: "How do you feel when listening to live performances?", err: "❌ I feel exciting when I hear music.", corr: "✅ I feel excited when listening to live performances." },
+          { q: "Do you play any musical instruments?", err: "❌ I play piano since five years old.", corr: "✅ I have been playing the piano since I was five years old." },
+          { q: "Why is music important in our daily lives?", err: "❌ It help us to relax when we tired.", corr: "✅ It helps us relax when we feel tired or stressed." },
+          { q: "Who is your biggest musical idol?", err: "❌ My favorite singer is Taylor Swift because her voice.", corr: "✅ My favorite singer is Taylor Swift because of her amazing vocal range." }
+        ];
+        suggestedVocab = [
+          { term: "melody", ipa: "/ˈmelədi/", cn: "旋律 / 曲调", py: "" },
+          { term: "concert", ipa: "/ˈkɒnsət/", cn: "音乐会 / 演唱会", py: "" },
+          { term: "rhythm", ipa: "/ˈrɪðəm/", cn: "节奏 / 韵律", py: "" },
+          { term: "harmony", ipa: "/ˈhɑːməni/", cn: "和谐 / 和声", py: "" },
+          { term: "inspiration", ipa: "/ˌɪnspəˈreɪʃn/", cn: "灵感 / 鼓舞人心的人", py: "" }
+        ];
+      } else if (lowerTopic.includes('hobby') || lowerTopic.includes('sport') || lowerTopic.includes('swim')) {
+        suggestedSentences = [
+          { q: "How often do you practice your favorite hobby?", err: "❌ I swim two time a week.", corr: "✅ I go swimming twice a week." },
+          { q: "Why do you enjoy this particular physical activity?", err: "❌ Because it make me healthy.", corr: "✅ Because it helps me stay healthy and energetic." },
+          { q: "What equipment do you need for this sport?", err: "❌ I need goggles and swimsuit.", corr: "✅ I need swimming goggles and a professional swimsuit." },
+          { q: "Have you ever participated in a competition?", err: "❌ No I never join any competition before.", corr: "✅ No, I have never participated in any competition before." },
+          { q: "What new sport would you like to try next?", err: "❌ I want try basketball.", corr: "✅ I would love to try playing basketball next." }
+        ];
+        suggestedVocab = [
+          { term: "energetic", ipa: "/ˌenəˈdʒetɪk/", cn: "精力充沛的", py: "" },
+          { term: "stamina", ipa: "/ˈstæmɪnə/", cn: "耐力 / 持久力", py: "" },
+          { term: "dedication", ipa: "/ˌdedɪˈkeɪʃn/", cn: "奉献 / 投入", py: "" },
+          { term: "achievement", ipa: "/əˈtʃiːvmənt/", cn: "成就 / 成绩", py: "" },
+          { term: "flexible", ipa: "/ˈfleksəbl/", cn: "灵活的 / 柔韧的", py: "" }
+        ];
+      }
+
+      if (!student.sentences) student.sentences = [];
+      if (!student.vocab) student.vocab = [];
+
+      suggestedSentences.forEach(s => student.sentences.push(s));
+      suggestedVocab.forEach(v => student.vocab.push(v));
+
+      saveDatabase();
+      renderSentences(student.sentences);
+      renderVocab(student.vocab);
+
+      setTimeout(() => {
+        btn.innerHTML = `<i data-lucide="wand-2" class="w-4 h-4"></i> Generate Fun Sentences & Vocab`;
+        lucide.createIcons();
+        alert(`Successfully generated and added 5+ sentences and vocabulary words tailored to "${topic}"!`);
+      }, 600);
+    }
+
+    /* ATTENDANCE PROOF PROCESSOR & PREVIEW MODAL HANDLERS */
+    function handleProofFileSelect(event) {
+      const file = event.target.files[0];
+      processProofFile(file);
+    }
+
+    function processProofFile(file) {
+      if (!file) return;
+      const placeholder = document.getElementById('att-proof-placeholder');
+      const dropzone = document.getElementById('att-proof-dropzone');
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        currentAttendanceProofData = e.target.result;
+        if (file.type.startsWith('image/')) {
+          placeholder.innerHTML = `
+            <img src="${e.target.result}" class="w-6 h-6 object-cover rounded border border-emerald-400 flex-shrink-0" />
+            <span class="truncate text-emerald-400 font-bold text-[11px]">${file.name}</span>
+          `;
+        } else {
+          placeholder.innerHTML = `
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+            <span class="truncate text-emerald-400 font-bold text-[11px]">${file.name}</span>
+          `;
+        }
+        dropzone.classList.add('border-emerald-500', 'bg-emerald-950/30');
+        lucide.createIcons();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openProofModal(recordIdx) {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!student || !student.attendanceRecords || !student.attendanceRecords[recordIdx]) return;
+
+      const record = student.attendanceRecords[recordIdx];
+      const proofData = record.proof;
+
+      if (!proofData) return;
+
+      const imgEl = document.getElementById('proof-modal-img');
+      const fallbackEl = document.getElementById('proof-modal-fallback');
+      const downloadEl = document.getElementById('proof-modal-download');
+      const subtitle = document.getElementById('proof-modal-subtitle');
+
+      subtitle.innerText = `Attendance Proof for ${record.date} (${record.status})`;
+
+      if (proofData.startsWith('data:image/')) {
+        imgEl.src = proofData;
+        imgEl.classList.remove('hidden');
+        fallbackEl.classList.add('hidden');
+      } else {
+        imgEl.classList.add('hidden');
+        fallbackEl.classList.remove('hidden');
+        downloadEl.href = proofData;
+      }
+
+      document.getElementById('proof-modal').classList.remove('hidden');
+    }
+
+    function closeProofModal() {
+      document.getElementById('proof-modal').classList.add('hidden');
+    }
+
+    /* LEVEL DIAGNOSTIC SCREENER FUNCTIONS */
+    function openLevelTestModal() {
+      document.getElementById('level-test-modal').classList.remove('hidden');
+      calculateDiagnosticLevel();
+    }
+
+    function closeLevelTestModal() {
+      document.getElementById('level-test-modal').classList.add('hidden');
+    }
+
+    function calculateDiagnosticLevel() {
+      const v1 = parseInt(document.getElementById('lt-speech').value) || 3;
+      const v2 = parseInt(document.getElementById('lt-grammar').value) || 3;
+      const v3 = parseInt(document.getElementById('lt-listening').value) || 3;
+      const v4 = parseInt(document.getElementById('lt-reading').value) || 3;
+
+      const avg = (v1 + v2 + v3 + v4) / 4;
+      let levelText = "Level 2 (A1 Elementary)";
+
+      if (avg <= 1.5) levelText = "Level 0 (Pre-A1 Starter)";
+      else if (avg <= 2.5) levelText = "Level 1 (A1 Beginner)";
+      else if (avg <= 3.5) levelText = "Level 2 (A1/A2 Elementary)";
+      else if (avg <= 4.5) levelText = "Level 3 (A2 Intermediate)";
+      else levelText = "Level 4 (B1/B2 Upper Intermediate)";
+
+      document.getElementById('diagnostic-result-text').innerText = levelText;
+    }
+
+    function applyDiagnosticResult() {
+      const levelText = document.getElementById('diagnostic-result-text').innerText;
+      if (database[currentTeacherKey]?.students?.[currentStudentKey]) {
+        database[currentTeacherKey].students[currentStudentKey].level = levelText;
+        saveDatabase();
+        loadStudentProfile(currentStudentKey);
+        closeLevelTestModal();
+        alert(`Assessed level "${levelText}" successfully saved to ${currentStudentKey}'s profile!`);
+      }
+    }
+
+    /* CLICKABLE CALENDAR DATE HELPERS FOR REWARD BADGES */
+    function updateRewardBadgeDate(badgeIndex, dateVal) {
+      if (!dateVal) return;
+      const parts = dateVal.split('-');
+      if (parts.length === 3) {
+        const formattedDate = `${parts[1]}/${parts[2]}/${parts[0].slice(-2)}`;
+        const displayEl = document.getElementById(`rewDateDisplay${badgeIndex}`);
+        if (displayEl) {
+          displayEl.innerHTML = `<span>📅</span> <span class="badge-date-text">${formattedDate}</span>`;
+        }
+        if (database[currentTeacherKey]?.students?.[currentStudentKey]) {
+          database[currentTeacherKey].students[currentStudentKey][`rewDate${badgeIndex}`] = formattedDate;
+          saveDatabase();
+        }
+      }
+    }
+
+    function setAttendanceDateToToday() {
+      const today = new Date().toISOString().split('T')[0];
+      const attDateInput = document.getElementById('att-input-date');
+      if (attDateInput) attDateInput.value = today;
+    }
+
+    function setAttendanceDate(dateStr) {
+      const attDateInput = document.getElementById('att-input-date');
+      if (attDateInput && dateStr) {
+        attDateInput.value = dateStr;
+        attDateInput.focus();
+      }
+    }
+
+    /* AUTO GRAMMAR CORRECTION & CHINESE TRANSLATION FOR SENTENCES */
+    async function fetchAndAddSentence() {
+      const inputEl = document.getElementById('auto-sentence-input');
+      const statusEl = document.getElementById('sentence-status-msg');
+      const wrongSentence = inputEl.value.trim();
+
+      if (!wrongSentence) return;
+
+      statusEl.innerText = "Analyzing sentence & translating to Chinese...";
+      statusEl.classList.remove('hidden');
+
+      let correctedSentence = wrongSentence;
+      let cnTranslation = "";
+
+      correctedSentence = correctedSentence
+        .replace(/\bhe go\b/gi, "he goes")
+        .replace(/\bshe go\b/gi, "she goes")
+        .replace(/\bit go\b/gi, "it goes")
+        .replace(/\bhe don't\b/gi, "he doesn't")
+        .replace(/\bshe don't\b/gi, "she doesn't")
+        .replace(/\bit don't\b/gi, "it doesn't")
+        .replace(/\bi is\b/gi, "I am")
+        .replace(/\byou is\b/gi, "you are")
+        .replace(/\bthey is\b/gi, "they are")
+        .replace(/\bwe is\b/gi, "we are")
+        .replace(/\bme like\b/gi, "I like")
+        .replace(/\bme want\b/gi, "I want");
+
+      correctedSentence = correctedSentence.charAt(0).toUpperCase() + correctedSentence.slice(1);
+      if (!/[.!?]$/.test(correctedSentence)) {
+        correctedSentence += ".";
+      }
+
+      try {
+        const transRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(correctedSentence)}&langpair=en|zh-CN`);
+        const transData = await transRes.json();
+        if (transData && transData.responseData && transData.responseData.translatedText) {
+          cnTranslation = transData.responseData.translatedText;
+        }
+      } catch (e) {
+        console.warn("Translation API request failed, using simple grammar fix.", e);
+      }
+
+      if (!database[currentTeacherKey].students[currentStudentKey].sentences) {
+        database[currentTeacherKey].students[currentStudentKey].sentences = [];
+      }
+
+      const formattedCorrection = cnTranslation 
+        ? `✅ ${correctedSentence} (${cnTranslation})`
+        : `✅ ${correctedSentence}`;
+
+      database[currentTeacherKey].students[currentStudentKey].sentences.push({
+        q: "(Sentence Practice)",
+        err: `❌ ${wrongSentence}`,
+        corr: formattedCorrection
+      });
+
+      saveDatabase();
+      renderSentences(database[currentTeacherKey].students[currentStudentKey].sentences);
+
+      inputEl.value = '';
+      statusEl.innerText = `Sentence added successfully!`;
+      setTimeout(() => statusEl.classList.add('hidden'), 2500);
+    }
+
+    /* AUTO-TRANSLATE AND IPA FETCH FEATURE */
+    async function fetchAndAddVocab() {
+      const inputEl = document.getElementById('auto-vocab-input');
+      const statusEl = document.getElementById('vocab-status-msg');
+      const term = inputEl.value.trim();
+
+      if (!term) return;
+
+      statusEl.innerText = "Fetching Chinese translation & IPA...";
+      statusEl.classList.remove('hidden');
+
+      let cnTranslation = "中文";
+      let ipaPronunciation = "/IPA/";
+
+      try {
+        const transRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(term)}&langpair=en|zh-CN`);
+        const transData = await transRes.json();
+        if (transData && transData.responseData && transData.responseData.translatedText) {
+          cnTranslation = transData.responseData.translatedText;
+        }
+
+        const ipaRes = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(term)}&qe=sp&md=r&ipa=1`);
+        const ipaData = await ipaRes.json();
+        if (ipaData && ipaData.length > 0 && ipaData[0].tags) {
+          const ipaTag = ipaData[0].tags.find(t => t.startsWith('ipa_pron:'));
+          if (ipaTag) {
+            ipaPronunciation = `/${ipaTag.replace('ipa_pron:', '')}/`;
+          }
+        }
+      } catch (e) {
+        console.warn("Auto-translate network fetch failed, falling back to manual placeholders.", e);
+      }
+
+      if (!database[currentTeacherKey].students[currentStudentKey].vocab) {
+        database[currentTeacherKey].students[currentStudentKey].vocab = [];
+      }
+
+      database[currentTeacherKey].students[currentStudentKey].vocab.push({
+        term: term,
+        ipa: ipaPronunciation,
+        cn: cnTranslation,
+        py: ""
+      });
+
+      saveDatabase();
+      renderVocab(database[currentTeacherKey].students[currentStudentKey].vocab);
+
+      inputEl.value = '';
+      statusEl.innerText = `Added "${term}" successfully!`;
+      setTimeout(() => statusEl.classList.add('hidden'), 2500);
+    }
+
+    /* SAVE ALL FEATURES TO HISTORICAL CLASS SESSIONS */
+    function saveCurrentSessionToHistory() {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!student) return;
+
+      if (!student.history) student.history = [];
+
+      const currentScores = { ...(student.scores || {}) };
+      let totalPts = 0;
+      Object.values(currentScores).forEach(s => totalPts += s);
+
+      const sentencesClone = JSON.parse(JSON.stringify(student.sentences || []));
+      const vocabClone = JSON.parse(JSON.stringify(student.vocab || []));
+
+      const sessionRecord = {
+        date: student.classDateTime || new Date().toLocaleString(),
+        topic: student.classTopic || "General Lesson Review",
+        scores: currentScores,
+        total: totalPts,
+        sentences: sentencesClone,
+        vocab: vocabClone,
+        img_frame1: student.img_frame1 || "",
+        img_frame2: student.img_frame2 || ""
+      };
+
+      const existingIdx = student.history.findIndex(h => h.date === sessionRecord.date && h.topic === sessionRecord.topic);
+      if (existingIdx >= 0) {
+        student.history[existingIdx] = sessionRecord;
+      } else {
+        student.history.push(sessionRecord);
+      }
+
+      saveDatabase();
+      renderProgressAnalytics();
+      renderRewardBoardFrames();
+      alert(`Class session successfully archived for ${student.englishName}! All sentence notes, vocabulary, cameras, and rubric ratings were saved.`);
+    }
+
+    /* RELOAD PREVIOUS CONDUCTED CLASS RECORD BACK TO REPORT VIEW */
+    function loadHistoricalSessionToReport(idx) {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!student || !student.history || !student.history[idx]) return;
+
+      const record = student.history[idx];
+      student.classDateTime = record.date;
+      student.classTopic = record.topic;
+      student.scores = JSON.parse(JSON.stringify(record.scores || {}));
+      student.sentences = JSON.parse(JSON.stringify(record.sentences || []));
+      student.vocab = JSON.parse(JSON.stringify(record.vocab || []));
+      student.img_frame1 = record.img_frame1 || "";
+      student.img_frame2 = record.img_frame2 || "";
+
+      saveDatabase();
+      loadStudentProfile(currentStudentKey);
+      switchTab('report');
+      alert(`Loaded historical class session from "${record.date}" into Class Report.`);
+    }
+
+    /* ATTENDANCE SYSTEM WITH PROOF ATTACHMENTS & PREVIEW MODAL */
+    function renderAttendanceSection() {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!student) return;
+
+      const records = student.attendanceRecords || [];
+      const tbody = document.getElementById('attendance-history-tbody');
+      tbody.innerHTML = '';
+
+      let countP = 0, countA = 0, countL = 0, countE = 0;
+
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-indigo-300">No attendance records logged yet for this student.</td></tr>`;
+      } else {
+        records.forEach((rec, idx) => {
+          if (rec.status === 'P') countP++;
+          else if (rec.status === 'A') countA++;
+          else if (rec.status === 'L') countL++;
+          else if (rec.status === 'E') countE++;
+
+          const badgeClasses = {
+            'P': 'bg-emerald-950/80 border-emerald-500 text-emerald-400',
+            'A': 'bg-pink-950/80 border-pink-500 text-pink-400',
+            'L': 'bg-amber-950/80 border-amber-500 text-amber-300',
+            'E': 'bg-sky-950/80 border-sky-500 text-sky-400'
+          };
+
+          const statusLabels = {
+            'P': 'Present (P)',
+            'A': 'Absent (A)',
+            'L': 'Late (L)',
+            'E': 'Excused (E)'
+          };
+
+          let proofHtml = `<span class="text-indigo-400 text-[10px]">No proof</span>`;
+          if (rec.proof) {
+            if (rec.proof.startsWith('data:image/')) {
+              proofHtml = `
+                <button onclick="openProofModal(${idx})" class="inline-flex items-center gap-1.5 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 p-1 rounded-xl transition-all shadow" title="Click to view proof preview">
+                  <img src="${rec.proof}" class="w-7 h-7 object-cover rounded-lg border border-indigo-700" />
+                  <span class="text-[10px] text-amber-300 font-bold pr-1">View Proof</span>
+                </button>`;
+            } else {
+              proofHtml = `
+                <button onclick="openProofModal(${idx})" class="inline-flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 px-2 py-1 rounded-xl text-amber-300 font-bold text-[10px]" title="Click to open attachment">
+                  📎 View File
+                </button>`;
+            }
+          }
+
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-indigo-900/40 transition-all";
+          tr.innerHTML = `
+            <td class="p-3 font-semibold text-amber-300 cursor-pointer hover:underline" onclick="setAttendanceDate('${rec.date}')" title="Click to select this date in calendar">
+              📅 ${rec.date}
+            </td>
+            <td class="p-3 text-center">
+              <span class="px-2.5 py-1 rounded-full border text-[11px] font-bold ${badgeClasses[rec.status] || ''}">
+                ${statusLabels[rec.status] || rec.status}
+              </span>
+            </td>
+            <td class="p-3 text-indigo-100">${rec.notes || '-'}</td>
+            <td class="p-3 text-center">${proofHtml}</td>
+            <td class="p-3 text-center no-print">
+              <button onclick="deleteAttendanceRecord(${idx})" class="text-pink-400 hover:text-pink-300 p-1 font-bold">✕</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('att-count-p').innerText = countP;
+      document.getElementById('att-count-a').innerText = countA;
+      document.getElementById('att-count-l').innerText = countL;
+      document.getElementById('att-count-e').innerText = countE;
+
+      syncAttendanceTrackSummary(records);
+      lucide.createIcons();
+    }
+
+    function addAttendanceRecord() {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!student) return;
+
+      const dateVal = document.getElementById('att-input-date').value;
+      const statusVal = document.getElementById('att-input-status').value;
+      const notesVal = document.getElementById('att-input-notes').value.trim();
+
+      if (!dateVal) {
+        alert("Please select a valid date.");
+        return;
+      }
+
+      if (!student.attendanceRecords) student.attendanceRecords = [];
+
+      student.attendanceRecords.unshift({
+        date: dateVal,
+        status: statusVal,
+        notes: notesVal,
+        proof: currentAttendanceProofData || ""
+      });
+
+      saveDatabase();
+      renderAttendanceSection();
+
+      document.getElementById('att-input-notes').value = '';
+      document.getElementById('att-input-proof').value = '';
+      const dropzone = document.getElementById('att-proof-dropzone');
+      if (dropzone) {
+        dropzone.classList.remove('border-emerald-500', 'bg-emerald-950/30');
+      }
+      const placeholder = document.getElementById('att-proof-placeholder');
+      if (placeholder) {
+        placeholder.innerHTML = `<i data-lucide="upload-cloud" class="w-4 h-4 text-amber-300 flex-shrink-0"></i><span id="att-proof-text" class="truncate text-[11px]">Drag File / Photo</span>`;
+      }
+      currentAttendanceProofData = null;
+      lucide.createIcons();
+    }
+
+    function deleteAttendanceRecord(index) {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (student && student.attendanceRecords) {
+        student.attendanceRecords.splice(index, 1);
+        saveDatabase();
+        renderAttendanceSection();
+      }
+    }
+
+    function clearAttendanceHistory() {
+      if (confirm(`Are you sure you want to clear all attendance records for ${currentStudentKey}?`)) {
+        database[currentTeacherKey].students[currentStudentKey].attendanceRecords = [];
+        saveDatabase();
+        renderAttendanceSection();
+      }
+    }
+
+    function syncAttendanceTrackSummary(records) {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!student) return;
+
+      if (!records || records.length === 0) {
+        student.attendanceTrack = "No records";
+      } else {
+        const summary = records.slice(0, 4).map(r => {
+          const parts = r.date.split('-');
+          const shortDate = parts.length === 3 ? `${parts[1]}/${parts[2]}/${parts[0].slice(-2)}` : r.date;
+          return `${shortDate} (${r.status})`;
+        }).join(' | ');
+        student.attendanceTrack = summary;
+      }
+
+      saveDatabase();
+      document.querySelectorAll('.sync-field[data-key="attendanceTrack"]').forEach(el => {
+        el.innerText = student.attendanceTrack;
+      });
+    }
+
+    function renderProgressAnalytics() {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!student) return;
+
+      const history = student.history || [];
+      const tbody = document.getElementById('progress-history-tbody');
+      const insightsContainer = document.getElementById('detailed-session-insights-container');
+      
+      tbody.innerHTML = '';
+      insightsContainer.innerHTML = '';
+
+      document.getElementById('analytics-total-sessions').innerText = history.length;
+
+      if (history.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-indigo-300">No conducted classes archived yet. Click "Save & Archive Class Record" on Class Report to log a session.</td></tr>`;
+        insightsContainer.innerHTML = `<p class="text-xs text-indigo-300 italic p-4 text-center">No session insights available yet. Archive sessions to view detailed behavior, strengths, and suggestions.</p>`;
+        document.getElementById('analytics-avg-score').innerText = "0.0 / 30";
+        document.getElementById('analytics-strong-skill').innerText = "N/A";
+        document.getElementById('analytics-focus-skill').innerText = "N/A";
+        renderCharts([], { conn:0, eng:0, comp:0, spk:0, tsk:0, beh:0 });
+        return;
+      }
+
+      let grandTotalScore = 0;
+      const skillSums = { conn:0, eng:0, comp:0, spk:0, tsk:0, beh:0 };
+
+      const skillMapNames = {
+        conn: 'Connectivity / 网络连接',
+        eng: 'Engagement / 课堂参与',
+        comp: 'Comprehension / 理解能力',
+        spk: 'Speaking / 口语表达',
+        tsk: 'Task Completion / 任务完成',
+        beh: 'Behavior / 课堂行为'
+      };
+
+      history.forEach((rec, idx) => {
+        grandTotalScore += rec.total;
+        Object.keys(skillSums).forEach(k => {
+          skillSums[k] += (rec.scores[k] || 0);
+        });
+
+        // Table row
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-indigo-900/40 transition-all";
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-white">${rec.date}</td>
+          <td class="p-3 text-indigo-100">${rec.topic}</td>
+          <td class="p-3 text-center">${rec.scores.conn}</td>
+          <td class="p-3 text-center">${rec.scores.eng}</td>
+          <td class="p-3 text-center">${rec.scores.comp}</td>
+          <td class="p-3 text-center">${rec.scores.spk}</td>
+          <td class="p-3 text-center">${rec.scores.tsk}</td>
+          <td class="p-3 text-center">${rec.scores.beh}</td>
+          <td class="p-3 text-center font-bold text-amber-300">${rec.total} / 30</td>
+          <td class="p-3 text-center no-print flex items-center justify-center gap-2">
+            <button onclick="loadHistoricalSessionToReport(${idx})" title="Load back into active report" class="text-sky-300 hover:text-white p-1 font-bold bg-sky-950/80 border border-sky-800 rounded-xl px-2.5 shadow">Load / 加载</button>
+            <button onclick="deleteHistoryRecord(${idx})" title="Delete session record" class="text-pink-400 hover:text-pink-300 p-1 font-bold">✕</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        // Calculate Strengths & Weaknesses for this session
+        let bestSkillKey = 'conn';
+        let worstSkillKey = 'conn';
+        let bestVal = -1;
+        let worstVal = 999;
+
+        Object.keys(rec.scores).forEach(sk => {
+          const sc = rec.scores[sk];
+          if (sc > bestVal) { bestVal = sc; bestSkillKey = sk; }
+          if (sc < worstVal) { worstVal = sc; worstSkillKey = sk; }
+        });
+
+        const sentencesCount = rec.sentences ? rec.sentences.length : 0;
+        const vocabCount = rec.vocab ? rec.vocab.length : 0;
+
+        // Render Detailed Session Insight Card with Independent Visual Dismissal Button
+        const card = document.createElement('div');
+        card.id = `insight-card-${idx}`;
+        card.className = "bg-indigo-950/80 p-4.5 rounded-2xl border border-indigo-800/80 space-y-3 relative group shadow-lg";
+        card.innerHTML = `
+          <button onclick="dismissInsightCard(${idx})" title="Hide Insight Card" class="exclude-jpg no-print absolute top-3 right-3 text-indigo-300 hover:text-pink-400 hover:border-pink-500 font-bold p-1.5 px-2.5 text-xs transition-all bg-indigo-900 border border-indigo-700 rounded-xl shadow flex items-center gap-1">✕ Delete</button>
+          
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-800/80 pb-2 pr-24">
+            <div class="flex items-center gap-2">
+              <span class="bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black px-2.5 py-0.5 rounded-xl text-xs shadow">Session ${idx+1}</span>
+              <strong class="text-white text-sm">${rec.topic}</strong>
+              <span class="text-indigo-300 text-xs">(${rec.date})</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-amber-300 font-bold">${calculateStarsFromTotal(rec.total)}</span>
+              <span class="bg-amber-500/20 text-amber-300 font-extrabold px-2.5 py-0.5 rounded-xl text-xs">${rec.total} / 30 pts</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <!-- What the student DID -->
+            <div class="bg-indigo-900/60 p-3 rounded-2xl border border-indigo-800/80 space-y-1.5">
+              <span class="text-emerald-400 font-bold uppercase tracking-wider block flex items-center gap-1">
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> What the Student Did (已完成表现)
+              </span>
+              <ul class="list-disc list-inside text-indigo-200 space-y-1">
+                <li>Successfully practiced and logged <strong class="text-white">${sentencesCount}</strong> sentence construction example(s).</li>
+                <li>Acquired and recorded <strong class="text-white">${vocabCount}</strong> new vocabulary term(s) with IPA & translation.</li>
+                <li>Demonstrated strongest capability in <strong class="text-sky-300">${skillMapNames[bestSkillKey]}</strong> (${bestVal}/5 pts).</li>
+                <li>Maintained stable attendance and active engagement throughout the lesson.</li>
+              </ul>
+            </div>
+
+            <!-- What the student DIDN'T DO / Areas for Growth -->
+            <div class="bg-indigo-900/60 p-3 rounded-2xl border border-indigo-800/80 space-y-1.5">
+              <span class="text-pink-400 font-bold uppercase tracking-wider block flex items-center gap-1">
+                <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Areas to Improve & What Was Missed (需改进与未完成项)
+              </span>
+              <ul class="list-disc list-inside text-indigo-200 space-y-1">
+                <li>Faced minor difficulties in <strong class="text-orange-300">${skillMapNames[worstSkillKey]}</strong> (${worstVal}/5 pts).</li>
+                <li>Needed extra guidance during spontaneous conversational drills and tense alignment.</li>
+                <li>Could improve response speed when tackling complex multi-clause sentences.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Strengths, Weaknesses, Suggestions & What to Keep On -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-1">
+            <div class="bg-emerald-950/40 border border-emerald-500/40 p-2.5 rounded-2xl space-y-1">
+              <span class="text-emerald-400 font-bold block flex items-center gap-1">
+                <i data-lucide="zap" class="w-3.5 h-3.5"></i> Session Strength (强项)
+              </span>
+              <p class="text-indigo-100">${skillMapNames[bestSkillKey]} showing solid mastery and consistent execution.</p>
+            </div>
+
+            <div class="bg-orange-950/40 border border-orange-500/40 p-2.5 rounded-2xl space-y-1">
+              <span class="text-orange-400 font-bold block flex items-center gap-1">
+                <i data-lucide="target" class="w-3.5 h-3.5"></i> Suggestion to Improve (改进建议)
+              </span>
+              <p class="text-indigo-100">Focus extra practice on ${skillMapNames[worstSkillKey]} through targeted sentence patterns.</p>
+            </div>
+
+            <div class="bg-sky-950/40 border border-sky-500/40 p-2.5 rounded-2xl space-y-1">
+              <span class="text-sky-300 font-bold block flex items-center gap-1">
+                <i data-lucide="thumbs-up" class="w-3.5 h-3.5"></i> What to Keep On (继续保持)
+              </span>
+              <p class="text-indigo-100">Keep up the enthusiastic participation, excellent attitude, and regular vocabulary reviews!</p>
+            </div>
+          </div>
+        `;
+        insightsContainer.appendChild(card);
+      });
+
+      const avgTotal = (grandTotalScore / history.length).toFixed(1);
+      document.getElementById('analytics-avg-score').innerText = `${avgTotal} / 30`;
+
+      const skillAverages = {};
+      let topSkill = 'conn', lowSkill = 'conn';
+      let topVal = -1, lowVal = 999;
+
+      const skillNames = {
+        conn: 'Connectivity (连接)', eng: 'Engagement (参与)', comp: 'Comprehension (理解)',
+        spk: 'Speaking (口语)', tsk: 'Task Completion (任务)', beh: 'Behavior (行为)'
+      };
+
+      Object.keys(skillSums).forEach(k => {
+        const avg = skillSums[k] / history.length;
+        skillAverages[k] = avg;
+        if (avg > topVal) { topVal = avg; topSkill = k; }
+        if (avg < lowVal) { lowVal = avg; lowSkill = k; }
+      });
+
+      document.getElementById('analytics-strong-skill').innerText = `${skillNames[topSkill]} (${topVal.toFixed(1)}/5)`;
+      document.getElementById('analytics-focus-skill').innerText = `${skillNames[lowSkill]} (${lowVal.toFixed(1)}/5)`;
+
+      renderCharts(history, skillAverages);
+      lucide.createIcons();
+    }
+
+    // Independent function to dismiss/remove only the insight card without touching the history log or charts
+    function dismissInsightCard(index) {
+      const cardEl = document.getElementById(`insight-card-${index}`);
+      if (cardEl) {
+        cardEl.remove();
+      }
+    }
+
+    function deleteHistoryRecord(index) {
+      const student = database[currentTeacherKey].students[currentStudentKey];
+      if (student.history) {
+        student.history.splice(index, 1);
+        saveDatabase();
+        renderProgressAnalytics();
+        renderRewardBoardFrames();
+      }
+    }
+
+    function clearStudentHistory() {
+      if (confirm(`Are you sure you want to clear all progress history logs for ${currentStudentKey}?`)) {
+        database[currentTeacherKey].students[currentStudentKey].history = [];
+        saveDatabase();
+        renderProgressAnalytics();
+        renderRewardBoardFrames();
+      }
+    }
+
+    function renderCharts(history, skillAverages) {
+      const trendCtx = document.getElementById('progressTrendChart').getContext('2d');
+      const radarCtx = document.getElementById('progressRadarChart').getContext('2d');
+
+      if (trendChartInstance) trendChartInstance.destroy();
+      if (radarChartInstance) radarChartInstance.destroy();
+
+      const labels = history.map((h, i) => `Session / 课 ${i+1}`);
+      const dataPoints = history.map(h => h.total);
+
+      trendChartInstance = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: labels.length ? labels : ['No Data / 无数据'],
+          datasets: [{
+            label: 'Total Performance Points / 性能总分',
+            data: dataPoints.length ? dataPoints : [0],
+            borderColor: '#f43f5e',
+            backgroundColor: 'rgba(244, 63, 94, 0.15)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#f43f5e'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { min: 0, max: 30, grid: { color: '#312e81' }, ticks: { color: '#c7d2fe' } },
+            x: { grid: { color: '#312e81' }, ticks: { color: '#c7d2fe' } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      radarChartInstance = new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+          labels: ['Connect/连接', 'Engage/参与', 'Comp./理解', 'Speaking/口语', 'Tasks/任务', 'Behavior/行为'],
+          datasets: [{
+            label: 'Average Score / 平均分',
+            data: [
+              skillAverages.conn || 0,
+              skillAverages.eng || 0,
+              skillAverages.comp || 0,
+              skillAverages.spk || 0,
+              skillAverages.tsk || 0,
+              skillAverages.beh || 0
+            ],
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56, 189, 248, 0.25)',
+            pointBackgroundColor: '#38bdf8'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              min: 0, max: 5,
+              grid: { color: '#312e81' },
+              angleLines: { color: '#4338ca' },
+              pointLabels: { color: '#e0e7ff', font: { size: 10 } },
+              ticks: { display: false }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function requestTeacherSwitch(tName) {
+      if (tName === currentTeacherKey) return;
+      pendingTeacherKey = tName;
+      document.getElementById('auth-teacher-name').innerText = tName;
+      document.getElementById('auth-password-input').value = '';
+      document.getElementById('auth-error').classList.add('hidden');
+      document.getElementById('auth-modal').classList.remove('hidden');
+      document.getElementById('auth-password-input').focus();
+    }
+
+    function submitTeacherAuth() {
+      const enteredPw = document.getElementById('auth-password-input').value;
+      const actualPw = database[pendingTeacherKey]?.password || "";
+
+      if (enteredPw === actualPw) {
+        document.getElementById('auth-modal').classList.add('hidden');
+        currentTeacherKey = pendingTeacherKey;
+        const studentKeys = Object.keys(database[currentTeacherKey].students || {});
+        currentStudentKey = studentKeys[0] || "";
+        renderTeacherDropdown();
+        renderStudentDropdown();
+        if (currentStudentKey) loadStudentProfile(currentStudentKey);
+      } else {
+        document.getElementById('auth-error').classList.remove('hidden');
+      }
+    }
+
+    function cancelTeacherAuth() {
+      document.getElementById('auth-modal').classList.add('hidden');
+      renderTeacherDropdown();
+    }
+
+    function renderTeacherDropdown() {
+      const select = document.getElementById('teacher-selector');
+      select.innerHTML = '';
+      Object.keys(database).forEach(tName => {
+        const opt = document.createElement('option');
+        opt.value = tName; opt.innerText = `🔒 ${tName}`;
+        if (tName === currentTeacherKey) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function createNewTeacher() {
+      const tName = prompt("Enter new Teacher name (e.g., Teacher Maria):");
+      if (tName && !database[tName]) {
+        const pw = prompt(`Set access password for ${tName}:`);
+        if (pw !== null) {
+          const templateStudent = database["Teacher Mark"]?.students["Lilian"] || {};
+          database[tName] = {
+            password: pw,
+            students: {
+              "Sample Student": JSON.parse(JSON.stringify(templateStudent))
+            }
+          };
+          database[tName].students["Sample Student"].englishName = "Sample Student";
+          saveDatabase();
+          currentTeacherKey = tName;
+          currentStudentKey = "Sample Student";
+          renderTeacherDropdown();
+          renderStudentDropdown();
+          loadStudentProfile(currentStudentKey);
+        }
+      }
+    }
+
+    function renderStudentDropdown() {
+      const select = document.getElementById('student-selector');
+      select.innerHTML = '';
+      const teacherStudents = database[currentTeacherKey]?.students || {};
+      Object.keys(teacherStudents).forEach(sName => {
+        const opt = document.createElement('option');
+        opt.value = sName; opt.innerText = sName;
+        if (sName === currentStudentKey) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function switchStudentProfile(sName) { loadStudentProfile(sName); }
+
+    function createNewProfile() {
+      const name = prompt(`Enter new student English name for ${currentTeacherKey}:`);
+      if (name) {
+        if (!database[currentTeacherKey].students) database[currentTeacherKey].students = {};
+        const templateStudent = database["Teacher Mark"]?.students["Lilian"] || {};
+        database[currentTeacherKey].students[name] = JSON.parse(JSON.stringify(templateStudent));
+        database[currentTeacherKey].students[name].englishName = name;
+        database[currentTeacherKey].students[name].sentences = [];
+        database[currentTeacherKey].students[name].vocab = [];
+        database[currentTeacherKey].students[name].history = [];
+        database[currentTeacherKey].students[name].attendanceRecords = [];
+        saveDatabase();
+        currentStudentKey = name;
+        renderStudentDropdown();
+        loadStudentProfile(name);
+      }
+    }
+
+    function renderDetailedRubricTable() {
+      const tbody = document.getElementById('detailed-rubric-tbody');
+      tbody.innerHTML = '';
+
+      const fullDesc = [
+        { key: 'conn', title: 'Connectivity (连接性)', sub: 'Wi-Fi & audio/video status', desc: { 1: 'Severe lag', 2: 'Frequent lag', 3: 'Acceptable', 4: 'Stable', 5: 'Flawless' } },
+        { key: 'eng', title: 'Engage (参与度)', sub: 'Focus & responsiveness', desc: { 1: 'Disengaged', 2: 'Distracted', 3: 'Generally attentive', 4: 'Attentive', 5: 'Fully focused' } },
+        { key: 'comp', title: 'Comprehension (理解能力)', sub: 'Understanding & vocab use', desc: { 1: 'Fails queries', 2: 'Struggles', 3: 'Understands most', 4: 'Understands well', 5: 'Instant grasp' } },
+        { key: 'spk', title: 'Speaking (口语表达)', sub: 'Fluency & sentence output', desc: { 1: 'Unwilling', 2: 'Single words', 3: 'Simple full sentences', 4: 'Fluent', 5: 'Highly fluent' } },
+        { key: 'tsk', title: 'Tasks (任务完成)', sub: 'Activity accuracy & spelling', desc: { 1: 'Incomplete', 2: 'Slow with fixes', 3: 'Completes main', 4: 'Independent', 5: 'High accuracy' } },
+        { key: 'beh', title: 'Behavior (行为表现)', sub: 'Conduct & participation', desc: { 1: 'Disruptive', 2: 'Restless', 3: 'Respectful', 4: 'Well-behaved', 5: 'Exemplary' } }
+      ];
+
+      fullDesc.forEach(cat => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-4 font-bold text-white border-r border-indigo-800/80 bg-indigo-950/60">
+            ${cat.title}
+            <span class="block font-normal text-[10px] text-indigo-300 mt-1">${cat.sub}</span>
+            <div class="mt-2 text-xs font-bold text-amber-300">Score: <span id="score-${cat.key}">5</span> / 5</div>
+          </td>
+          ${[1, 2, 3, 4, 5].map(v => `
+            <td onclick="setScore('${cat.key}',${v})" class="rubric-cell ${cat.key}-${v} p-3 text-[11px] cursor-pointer hover:bg-indigo-900/60 transition-all border-r border-indigo-800/50 relative">
+              <div class="font-bold text-xs mb-1 flex items-center justify-between">
+                <span>${v} Pt${v > 1 ? 's' : ''}</span>
+                <span class="check-icon opacity-0">✓</span>
+              </div>
+              <p class="leading-snug">${cat.desc[v]}</p>
+            </td>
+          `).join('')}
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setScore(catKey, val) {
+      if (!database[currentTeacherKey].students[currentStudentKey].scores) {
+        database[currentTeacherKey].students[currentStudentKey].scores = {};
+      }
+      database[currentTeacherKey].students[currentStudentKey].scores[catKey] = val;
+      saveDatabase();
+      updateRubricUI();
+    }
+
+    function calculateStarsFromTotal(totalPts) {
+      if (totalPts >= 27) return "★★★★★";
+      if (totalPts >= 21) return "★★★★☆";
+      if (totalPts >= 15) return "★★★☆☆";
+      if (totalPts >= 10) return "★★☆☆☆";
+      if (totalPts > 0) return "★☆☆☆☆";
+      return "☆☆☆☆☆";
+    }
+
+    function renderRewardBoardFrames() {
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!student) return;
+
+      const history = student.history || [];
+      const gridContainer = document.getElementById('reward-board-grid');
+      const summaryContainer = document.getElementById('eight-session-summary-container');
+      
+      gridContainer.innerHTML = '';
+      summaryContainer.innerHTML = '';
+
+      let sumOfTotals = 0;
+      let countedSessions = 0;
+
+      for (let i = 1; i <= 8; i++) {
+        const session = history[i - 1]; // map frame to archived history session
+        let starStr = "☆☆☆☆☆";
+        let displayDate = "--/--/--";
+        let storedImg = student[`img_rew${i}`] || "";
+
+        if (session) {
+          sumOfTotals += session.total;
+          countedSessions++;
+          starStr = calculateStarsFromTotal(session.total);
+
+          if (session.date) {
+            const parts = session.date.split('-');
+            if (parts.length === 3) {
+              displayDate = `${parts[1]}/${parts[2]}/${parts[0].slice(-2)}`;
+            } else {
+              displayDate = session.date.length > 10 ? session.date.slice(0, 10) : session.date;
+            }
+          }
+        } else {
+          displayDate = student[`rewDate${i}`] || "--/--/--";
+        }
+
+        // Render Reward Frame with Delete Button
+        const div = document.createElement('div');
+        div.className = "bg-indigo-950 border border-indigo-800/80 rounded-2xl p-2.5 text-center space-y-2 shadow-inner";
+        div.innerHTML = `
+          <div class="flex justify-center text-amber-300 text-xs tracking-wider" title="Score: ${session ? session.total + '/30' : 'No Session'}">${starStr}</div>
+          <div class="drop-zone relative h-28 bg-indigo-900/60 border-2 border-dashed border-indigo-700 hover:border-pink-400 rounded-xl overflow-hidden flex items-center justify-center cursor-pointer transition-all" data-target="rew${i}">
+            <input type="file" accept="image/*" onchange="previewImage(event, 'rew${i}')" class="absolute inset-0 opacity-0 cursor-pointer z-10" />
+            <img id="rew${i}" class="${storedImg ? '' : 'hidden'} w-full h-full object-cover" src="${storedImg}" />
+            <button onclick="event.stopPropagation(); deleteImage('rew${i}')" id="rew${i}-delete" class="exclude-jpg no-print absolute top-1 right-1 bg-slate-950/80 hover:bg-pink-600 text-slate-300 hover:text-white p-1 rounded-lg text-[10px] font-bold z-20 ${storedImg ? '' : 'hidden'} shadow" title="Delete Badge">✕</button>
+            <div id="rew${i}-placeholder" class="${storedImg ? 'hidden' : ''} text-indigo-300 text-[10px] pointer-events-none font-semibold">Badge ${i}</div>
+          </div>
+          <div class="relative group flex items-center justify-center">
+            <input type="date" id="rewDateInput${i}" onchange="updateRewardBadgeDate(${i}, this.value)" onclick="this.showPicker ? this.showPicker() : null" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20" />
+            <p id="rewDateDisplay${i}" class="text-[10px] text-indigo-200 font-bold hover:text-amber-300 transition-all cursor-pointer flex items-center gap-1">
+              <span>📅</span> <span class="badge-date-text">${displayDate}</span>
+            </p>
+          </div>
+        `;
+        gridContainer.appendChild(div);
+
+        // Render 8-Session Summary Row
+        const summaryRow = document.createElement('div');
+        summaryRow.className = "flex items-center justify-between py-1.5 px-2 hover:bg-indigo-900/50 rounded-xl transition-all";
+        if (session) {
+          summaryRow.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="bg-amber-500/20 text-amber-300 font-extrabold px-2.5 py-0.5 rounded-xl text-[10px]">Session ${i}</span>
+              <span class="text-white font-semibold">${session.topic}</span>
+              <span class="text-indigo-300 text-[10px]">(${session.date})</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-amber-300">${starStr}</span>
+              <strong class="text-white">${session.total} / 30 pts</strong>
+            </div>
+          `;
+        } else {
+          summaryRow.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="bg-indigo-900 text-indigo-400 px-2.5 py-0.5 rounded-xl text-[10px]">Session ${i}</span>
+              <span class="text-indigo-400 italic">Not conducted yet</span>
+            </div>
+            <span class="text-indigo-400">-- / --</span>
+          `;
+        }
+        summaryContainer.appendChild(summaryRow);
+      }
+
+      // Compute Averaged Score across all covered sessions (up to 8)
+      const avgScoreDisplay = document.getElementById('profile-total-display');
+      if (countedSessions > 0) {
+        const averagePts = (sumOfTotals / countedSessions).toFixed(1);
+        let ratingDesc = "5 Stars (★★★★★)";
+        if (averagePts < 27 && averagePts >= 21) ratingDesc = "4 Stars (★★★★☆)";
+        else if (averagePts < 21 && averagePts >= 15) ratingDesc = "3 Stars (★★★☆☆)";
+        else if (averagePts < 15 && averagePts >= 10) ratingDesc = "2 Stars (★★☆☆☆)";
+        else if (averagePts < 10) ratingDesc = "1 Star (★☆☆☆☆)";
+
+        avgScoreDisplay.innerText = `${averagePts} / 30 Points (Average across ${countedSessions} session${countedSessions>1?'s':''}) — ${ratingDesc}`;
+      } else {
+        avgScoreDisplay.innerText = `0.0 / 30 Points (No sessions logged yet)`;
+      }
+
+      initDragAndDrop();
+    }
+
+    function updateRubricUI() {
+      const studentData = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (!studentData) return;
+
+      const scores = studentData.scores || { conn:5, eng:5, comp:5, spk:5, tsk:5, beh:5 };
+      let total = 0;
+
+      detailedRubricData.forEach(cat => {
+        const score = scores[cat.key] || 5;
+        total += score;
+        const style = levelStyles[score];
+
+        const scoreCol = document.getElementById(`score-${cat.key}`);
+        if(scoreCol) scoreCol.innerText = score;
+
+        const card = document.getElementById(`card-${cat.key}`);
+        const badge = document.getElementById(`badge-${cat.key}`);
+        if (card && badge) {
+          card.className = `flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all ${style.cardBg}`;
+          badge.innerText = `${score} / 5 ${style.label}`;
+        }
+
+        for (let i = 1; i <= 5; i++) {
+          const cell = document.querySelector(`.rubric-cell.${cat.key}-${i}`);
+          if (cell) {
+            const check = cell.querySelector('.check-icon');
+            if (i === score) {
+              cell.className = `rubric-cell ${cat.key}-${i} p-3 text-[11px] cursor-pointer transition-all border-r border-indigo-800/50 relative ${style.cellBorder}`;
+              if (check) check.classList.remove('opacity-0');
+            } else {
+              cell.className = `rubric-cell ${cat.key}-${i} p-3 text-[11px] cursor-pointer hover:bg-indigo-950/60 transition-all border-r border-indigo-800/50 text-indigo-300 relative`;
+              if (check) check.classList.add('opacity-0');
+            }
+          }
+        }
+      });
+
+      document.getElementById('total-points').innerText = `${total} / 30`;
+      
+      let ratingText = "5 Stars (★★★★★)";
+      let ratingDesc = "Fantastic Job! (优秀)";
+      if (total < 27 && total >= 21) { ratingText = "4 Stars (★★★★☆)"; ratingDesc = "Good Job! (良好)"; }
+      else if (total < 21 && total >= 15) { ratingText = "3 Stars (★★★☆☆)"; ratingDesc = "Satisfactory (达标)"; }
+      else if (total < 15 && total >= 10) { ratingText = "2 Stars (★★☆☆☆)"; ratingDesc = "Needs Improvement (需改进)"; }
+      else if (total < 10) { ratingText = "1 Star (★☆☆☆☆)"; ratingDesc = "Keep Trying! (不合格)"; }
+
+      document.getElementById('star-rating-display').innerText = ratingText;
+
+      const reportScoreDisplay = document.getElementById('report-total-score-display');
+      const reportRatingDisplay = document.getElementById('report-rating-display');
+      if (reportScoreDisplay) reportScoreDisplay.innerText = `${total} / 30 Points`;
+      if (reportRatingDisplay) reportRatingDisplay.innerText = `${ratingText} — ${ratingDesc}`;
+    }
+
+    function initDragAndDrop() {
+      const dropZones = document.querySelectorAll('.drop-zone');
+      dropZones.forEach(zone => {
+        ['dragenter', 'dragover'].forEach(eventName => {
+          zone.addEventListener(eventName, (e) => {
+            e.preventDefault(); e.stopPropagation();
+            zone.classList.add('dragover');
+          }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+          zone.addEventListener(eventName, (e) => {
+            e.preventDefault(); e.stopPropagation();
+            zone.classList.remove('dragover');
+          }, false);
+        });
+        zone.addEventListener('drop', (e) => {
+          const files = e.dataTransfer.files;
+          if (files && files.length > 0) {
+            const target = zone.getAttribute('data-target');
+            if (target === 'att-proof') {
+              processProofFile(files[0]);
+            } else if (files[0].type.startsWith('image/')) {
+              const reader = new FileReader();
+              reader.onload = function(evt) {
+                displayAndSaveImage(target, evt.target.result);
+              };
+              reader.readAsDataURL(files[0]);
+            }
+          }
+        }, false);
+      });
+    }
+
+    function previewImage(event, targetId) {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          displayAndSaveImage(targetId, e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function displayAndSaveImage(targetId, dataUrl) {
+      const img = document.getElementById(targetId);
+      const placeholder = document.getElementById(`${targetId}-placeholder`);
+      const deleteBtn = document.getElementById(`${targetId}-delete`);
+      
+      if (img) { img.src = dataUrl; img.classList.remove('hidden'); }
+      if (placeholder) { placeholder.classList.add('hidden'); }
+      if (deleteBtn) { deleteBtn.classList.remove('hidden'); }
+
+      if (database[currentTeacherKey]?.students?.[currentStudentKey]) {
+        database[currentTeacherKey].students[currentStudentKey][`img_${targetId}`] = dataUrl;
+        saveDatabase();
+      }
+    }
+
+    // Function to delete/clear image from any frame
+    function deleteImage(targetId) {
+      const img = document.getElementById(targetId);
+      const placeholder = document.getElementById(`${targetId}-placeholder`);
+      const deleteBtn = document.getElementById(`${targetId}-delete`);
+
+      if (img) { img.src = ''; img.classList.add('hidden'); }
+      if (placeholder) { placeholder.classList.remove('hidden'); }
+      if (deleteBtn) { deleteBtn.classList.add('hidden'); }
+
+      if (database[currentTeacherKey]?.students?.[currentStudentKey]) {
+        database[currentTeacherKey].students[currentStudentKey][`img_${targetId}`] = "";
+        saveDatabase();
+      }
+    }
+
+    function handleSyncInput(element) {
+      const key = element.getAttribute('data-key');
+      let val = element.innerText;
+      if (element.querySelector('.badge-date-text')) {
+        val = element.querySelector('.badge-date-text').innerText;
+      }
+      
+      const student = database[currentTeacherKey]?.students?.[currentStudentKey];
+      if (student) {
+        student[key] = val;
+
+        if (key === 'classesAvailed' || key === 'classConsumed') {
+          const availed = parseInt(student.classesAvailed) || 0;
+          const consumed = parseInt(student.classConsumed) || 0;
+          const remaining = Math.max(0, availed - consumed);
+          student.remainingClasses = remaining.toString();
+          
+          document.querySelectorAll('.sync-field[data-key="remainingClasses"]').forEach(el => {
+            el.innerText = student.remainingClasses;
+          });
+        }
+
+        saveDatabase();
+
+        document.querySelectorAll(`.sync-field[data-key="${key}"]`).forEach(el => {
+          if (el !== element) {
+            if (el.querySelector('.badge-date-text')) {
+              el.querySelector('.badge-date-text').innerText = val;
+            } else {
+              el.innerText = val;
+            }
+          }
+        });
+      }
+    }
+
+    function loadStudentProfile(key) {
+      currentStudentKey = key;
+      const data = database[currentTeacherKey]?.students?.[key];
+      if (!data) return;
+
+      const availed = parseInt(data.classesAvailed) || 0;
+      const consumed = parseInt(data.classConsumed) || 0;
+      data.remainingClasses = Math.max(0, availed - consumed).toString();
+
+      document.querySelectorAll('.sync-field').forEach(el => {
+        const fieldKey = el.getAttribute('data-key');
+        if (fieldKey && data[fieldKey] !== undefined) {
+          if (el.querySelector('.badge-date-text')) {
+            el.querySelector('.badge-date-text').innerText = data[fieldKey];
+          } else {
+            el.innerText = data[fieldKey];
+          }
+        }
+      });
+
+      const imageTargets = ['frame1', 'frame2', 'avatar-img', 'rew1', 'rew2', 'rew3', 'rew4', 'rew5', 'rew6', 'rew7', 'rew8'];
+      imageTargets.forEach(targetId => {
+        const storedImg = data[`img_${targetId}`];
+        const img = document.getElementById(targetId);
+        const placeholder = document.getElementById(`${targetId}-placeholder`);
+        const deleteBtn = document.getElementById(`${targetId}-delete`);
+
+        if (storedImg && img) {
+          img.src = storedImg; img.classList.remove('hidden');
+          if (placeholder) placeholder.classList.add('hidden');
+          if (deleteBtn) deleteBtn.classList.remove('hidden');
+        } else if (img) {
+          img.src = ''; img.classList.add('hidden');
+          if (placeholder) placeholder.classList.remove('hidden');
+          if (deleteBtn) deleteBtn.classList.add('hidden');
+        }
+      });
+
+      renderSentences(data.sentences || []);
+      renderVocab(data.vocab || []);
+      updateRubricUI();
+      renderProgressAnalytics();
+      renderAttendanceSection();
+      renderRewardBoardFrames();
+    }
+
+    /* SENTENCE MANAGEMENT WITH DELETE FUNCTIONALITY */
+    function renderSentences(list) {
+      const container = document.getElementById('sentence-list');
+      container.innerHTML = '';
+      list.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = "p-3 bg-indigo-950/80 rounded-2xl border border-indigo-800/80 space-y-1 relative group shadow-inner";
+        div.innerHTML = `
+          <button onclick="deleteSentenceItem(${index})" title="Delete Sentence" class="exclude-jpg no-print absolute top-2 right-2 text-indigo-400 hover:text-pink-400 font-bold p-1 text-xs transition-all">✕</button>
+          <p class="text-indigo-300 italic pr-6" contenteditable="true" oninput="updateSentenceItem(${index}, 'q', this.innerText)">${item.q}</p>
+          <p class="text-pink-300 font-medium" contenteditable="true" oninput="updateSentenceItem(${index}, 'err', this.innerText)">${item.err}</p>
+          <p class="text-emerald-400 font-bold" contenteditable="true" oninput="updateSentenceItem(${index}, 'corr', this.innerText)">${item.corr}</p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addSentenceRow() {
+      if (!database[currentTeacherKey].students[currentStudentKey].sentences) {
+        database[currentTeacherKey].students[currentStudentKey].sentences = [];
+      }
+      database[currentTeacherKey].students[currentStudentKey].sentences.push({ q: "(New question)", err: "❌ Original", corr: "✅ Correction" });
+      saveDatabase();
+      renderSentences(database[currentTeacherKey].students[currentStudentKey].sentences);
+    }
+
+    function updateSentenceItem(index, key, val) {
+      database[currentTeacherKey].students[currentStudentKey].sentences[index][key] = val;
+      saveDatabase();
+    }
+
+    function deleteSentenceItem(index) {
+      const sentences = database[currentTeacherKey]?.students?.[currentStudentKey]?.sentences;
+      if (sentences) {
+        sentences.splice(index, 1);
+        saveDatabase();
+        renderSentences(sentences);
+      }
+    }
+
+    /* VOCABULARY MANAGEMENT WITH DELETE FUNCTIONALITY */
+    function renderVocab(list) {
+      const container = document.getElementById('vocab-grid');
+      container.innerHTML = '';
+      list.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = "p-3 bg-indigo-950/80 rounded-2xl border border-indigo-800/80 space-y-1 relative group shadow-inner";
+        div.innerHTML = `
+          <button onclick="deleteVocabItem(${index})" title="Delete Vocabulary" class="exclude-jpg no-print absolute top-2 right-2 text-indigo-400 hover:text-pink-400 font-bold p-1 text-xs transition-all">✕</button>
+          <p class="text-amber-300 font-bold text-sm pr-6" contenteditable="true" oninput="updateVocabItem(${index}, 'term', this.innerText)">${item.term} <span class="text-indigo-300 text-xs font-normal">${item.ipa}</span></p>
+          <p class="text-indigo-200" contenteditable="true" oninput="updateVocabItem(${index}, 'cn', this.innerText)">${item.cn} <span class="text-indigo-400">${item.py || ''}</span></p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addVocabRow() {
+      if (!database[currentTeacherKey].students[currentStudentKey].vocab) {
+        database[currentTeacherKey].students[currentStudentKey].vocab = [];
+      }
+      database[currentTeacherKey].students[currentStudentKey].vocab.push({ term: "Word", ipa: "/IPA/", cn: "中文", py: "" });
+      saveDatabase();
+      renderVocab(database[currentTeacherKey].students[currentStudentKey].vocab);
+    }
+
+    function updateVocabItem(index, key, val) {
+      database[currentTeacherKey].students[currentStudentKey].vocab[index][key] = val;
+      saveDatabase();
+    }
+
+    function deleteVocabItem(index) {
+      const vocab = database[currentTeacherKey]?.students?.[currentStudentKey]?.vocab;
+      if (vocab) {
+        vocab.splice(index, 1);
+        saveDatabase();
+        renderVocab(vocab);
+      }
+    }
+
+    function saveDatabase() { localStorage.setItem('iShepherd_Progress_DB', JSON.stringify(database)); }
+
+    function exportDatabase() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(database, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `iShepherd_Progress_Backup.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click(); downloadAnchor.remove();
+    }
+
+    function importDatabase(event) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          database = JSON.parse(e.target.result);
+          saveDatabase();
+          currentTeacherKey = Object.keys(database)[0];
+          currentStudentKey = Object.keys(database[currentTeacherKey].students)[0];
+          renderTeacherDropdown();
+          renderStudentDropdown();
+          loadStudentProfile(currentStudentKey);
+          alert("Multi-Teacher Database imported successfully!");
+        } catch(err) { alert("Invalid JSON backup file."); }
+      };
+      reader.readAsText(event.target.files[0]);
+    }
+
+    function switchTab(tabKey) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-gradient-to-r', 'from-pink-500', 'to-rose-500', 'text-white', 'shadow-md');
+        btn.classList.add('text-indigo-200');
+      });
+      document.getElementById(`category-${tabKey}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tabKey}`);
+      activeBtn.classList.add('bg-gradient-to-r', 'from-pink-500', 'to-rose-500', 'text-white', 'shadow-md');
+      activeBtn.classList.remove('text-indigo-200');
+
+      if (tabKey === 'progress') {
+        renderProgressAnalytics();
+      } else if (tabKey === 'attendance') {
+        renderAttendanceSection();
+      } else if (tabKey === 'profile') {
+        renderRewardBoardFrames();
+      }
+    }
+  </script>
+</body>
+</html>
