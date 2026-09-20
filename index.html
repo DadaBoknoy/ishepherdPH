@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>i-Shepherd Teacher Portal</title>
+  <title>i-Shepherd Interactive Teacher Portal</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -26,6 +26,20 @@
       .tab-content { display: block !important; page-break-after: always; margin: 0 !important; padding: 10px !important; }
       .tab-content:last-child { page-break-after: avoid; }
       div, section { box-shadow: none !important; border-radius: 0 !important; }
+    }
+
+    /* Styles for the image logo to fit neatly in the header */
+    .header-logo-container {
+      display: flex;
+      align-items: center;
+      max-height: 45px;
+      max-width: 140px;
+    }
+    .header-logo-container img {
+      max-height: 42px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
     }
   </style>
 </head>
@@ -168,9 +182,9 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
       
       <div class="flex flex-wrap items-center gap-3">
-        <div class="bg-gradient-to-r from-pink-500 to-amber-400 text-slate-950 px-3.5 py-2 rounded-2xl font-black text-base flex items-center gap-2 shadow-lg">
-          <i data-lucide="star" class="w-5 h-5 fill-slate-950"></i>
-          <span>i-SHEPHERD</span>
+        <!-- Integrated Image Logo[cite: 3] -->
+        <div class="header-logo-container">
+          <img src="images/i-shepherd.png" alt="i-shepherd.png" />
         </div>
 
         <!-- Password Protected Teacher Selector -->
@@ -243,7 +257,7 @@
           <div class="space-y-2">
             <div class="flex items-center gap-2">
               <div class="inline-flex items-center gap-2 px-3.5 py-1 bg-pink-500/20 text-pink-300 border border-pink-500/40 rounded-full text-xs font-bold uppercase tracking-wider shadow">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Fun English Adventure
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> English Adventure
               </div>
 
               <!-- FRONT PAGE LEVEL TEST BUTTON -->
@@ -350,13 +364,13 @@
           <div>
             <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
               <span>AI Topic Suggestion Assistant</span>
-              <span class="text-[10px] bg-pink-500/30 text-pink-200 px-2.5 py-0.5 rounded-full font-semibold">5+ Fun Examples</span>
+              <span class="text-[10px] bg-pink-500/30 text-pink-200 px-2.5 py-0.5 rounded-full font-semibold">Level-Tailored Content</span>
             </h3>
-            <p class="text-xs text-indigo-200">Generate wonderful conversation sentences and vocab words tailored to your topic!</p>
+            <p class="text-xs text-indigo-200">Generates sentences & vocabulary perfectly matched to the student's current proficiency level!</p>
           </div>
         </div>
         <button onclick="generateTopicSuggestions()" id="ai-suggest-btn" class="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all shadow-lg whitespace-nowrap">
-          <i data-lucide="wand-2" class="w-4 h-4"></i> Generate Fun Sentences & Vocab
+          <i data-lucide="wand-2" class="w-4 h-4"></i> Generate Level-Targeted Content
         </button>
       </div>
 
@@ -413,7 +427,7 @@
 
         <div class="lg:col-span-3 space-y-4">
           <div class="bg-indigo-900/70 border border-indigo-700/60 rounded-3xl p-4 text-center space-y-3 shadow-xl backdrop-blur-sm">
-            <h3 class="exclude-jpg text-xs font-bold uppercase tracking-wider text-indigo-300">Fun Lesson Photo Frames</h3>
+            <h3 class="exclude-jpg text-xs font-bold uppercase tracking-wider text-indigo-300">Lesson Photo Frames</h3>
             
             <!-- Frame 1 with Delete Button -->
             <div class="drop-zone relative bg-indigo-950 border-2 border-dashed border-indigo-700 hover:border-pink-400 rounded-2xl overflow-hidden aspect-video flex flex-col items-center justify-center cursor-pointer transition-all shadow-inner" data-target="frame1">
@@ -1073,62 +1087,66 @@
       });
     }
 
-    /* AI TOPIC SUGGESTION GENERATOR (5+ EXAMPLES) */
+    /* LEVEL-TAILORED AI TOPIC SUGGESTION GENERATOR */
     async function generateTopicSuggestions() {
       const student = database[currentTeacherKey]?.students?.[currentStudentKey];
       if (!student) return;
 
       const topic = student.classTopic || "General English Conversation";
+      const studentLevel = (student.level || "").toLowerCase();
+      
       const btn = document.getElementById('ai-suggest-btn');
-      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Generating 5+ Examples...`;
+      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Tailoring to ${student.level || 'Level'}...`;
       lucide.createIcons();
 
-      let suggestedSentences = [
-        { q: `What are your main thoughts regarding ${topic}?`, err: "❌ I think it is good because it make me happy.", corr: "✅ I believe it is wonderful because it brings me great joy." },
-        { q: `Can you share how you usually prepare for ${topic}?`, err: "❌ Always I do it in the weekend with my friend.", corr: "✅ I usually do it over the weekend with my friends." },
-        { q: `What challenges do people usually face with ${topic}?`, err: "❌ Sometimes is difficult to understand fast.", corr: "✅ Sometimes it can be quite challenging to grasp quickly." },
-        { q: `Would you recommend ${topic} to your classmates?`, err: "❌ Yes I will recommend because is very fun.", corr: "✅ Yes, I would highly recommend it because it is very entertaining." },
-        { q: `How has your understanding of ${topic} improved lately?`, err: "❌ I learn more words and speak better now.", corr: "✅ I have learned more vocabulary and can speak much more fluently now." }
-      ];
+      let suggestedSentences = [];
+      let suggestedVocab = [];
 
-      let suggestedVocab = [
-        { term: "fascinating", ipa: "/ˈfæsɪneɪtɪŋ/", cn: "极有趣的 / 迷人的", py: "" },
-        { term: "experience", ipa: "/ɪkˈspɪəriəns/", cn: "经验 / 体验", py: "" },
-        { term: "perspective", ipa: "/pəˈspektɪv/", cn: "观点 / 视角", py: "" },
-        { term: "significant", ipa: "/sɪɡˈnɪfɪkənt/", cn: "重大的 / 显著的", py: "" },
-        { term: "opportunity", ipa: "/ˌɒpəˈtjuːnəti/", cn: "机会 / 时机", py: "" }
-      ];
-
-      const lowerTopic = topic.toLowerCase();
-      if (lowerTopic.includes('music') || lowerTopic.includes('entertainment') || lowerTopic.includes('song')) {
+      // Determine complexity tier based on student level
+      if (studentLevel.includes('level 0') || studentLevel.includes('pre-a1') || studentLevel.includes('starter') || studentLevel.includes('level 1')) {
         suggestedSentences = [
-          { q: "What is your favorite genre of music to relax with?", err: "❌ My favorite song is pop music.", corr: "✅ My favorite genre of music is pop." },
-          { q: "How do you feel when listening to live performances?", err: "❌ I feel exciting when I hear music.", corr: "✅ I feel excited when listening to live performances." },
-          { q: "Do you play any musical instruments?", err: "❌ I play piano since five years old.", corr: "✅ I have been playing the piano since I was five years old." },
-          { q: "Why is music important in our daily lives?", err: "❌ It help us to relax when we tired.", corr: "✅ It helps us relax when we feel tired or stressed." },
-          { q: "Who is your biggest musical idol?", err: "❌ My favorite singer is Taylor Swift because her voice.", corr: "✅ My favorite singer is Taylor Swift because of her amazing vocal range." }
+          { q: `What is this about ${topic}?`, err: "❌ I like very much.", corr: "✅ I like it very much." },
+          { q: `Do you see this in ${topic}?`, err: "❌ Yes I can see.", corr: "✅ Yes, I can see it." },
+          { q: `Is ${topic} good for you?`, err: "❌ Yes is good.", corr: "✅ Yes, it is good." },
+          { q: `What color is it in ${topic}?`, err: "❌ It is red color.", corr: "✅ It is red." },
+          { q: `Can you point to ${topic}?`, err: "❌ Here is.", corr: "✅ Here it is." }
         ];
         suggestedVocab = [
-          { term: "melody", ipa: "/ˈmelədi/", cn: "旋律 / 曲调", py: "" },
-          { term: "concert", ipa: "/ˈkɒnsət/", cn: "音乐会 / 演唱会", py: "" },
-          { term: "rhythm", ipa: "/ˈrɪðəm/", cn: "节奏 / 韵律", py: "" },
-          { term: "harmony", ipa: "/ˈhɑːməni/", cn: "和谐 / 和声", py: "" },
-          { term: "inspiration", ipa: "/ˌɪnspəˈreɪʃn/", cn: "灵感 / 鼓舞人心的人", py: "" }
+          { term: "happy", ipa: "/ˈhæpi/", cn: "高兴的 / 快乐的", py: "" },
+          { term: "big", ipa: "/bɪɡ/", cn: "大的", py: "" },
+          { term: "small", ipa: "/smɔːl/", cn: "小的", py: "" },
+          { term: "good", ipa: "/ɡʊd/", cn: "好的", py: "" },
+          { term: "fun", ipa: "/fʌn/", cn: "有趣的", py: "" }
         ];
-      } else if (lowerTopic.includes('hobby') || lowerTopic.includes('sport') || lowerTopic.includes('swim')) {
+      } else if (studentLevel.includes('level 3') || studentLevel.includes('intermediate') || studentLevel.includes('level 4') || studentLevel.includes('upper')) {
         suggestedSentences = [
-          { q: "How often do you practice your favorite hobby?", err: "❌ I swim two time a week.", corr: "✅ I go swimming twice a week." },
-          { q: "Why do you enjoy this particular physical activity?", err: "❌ Because it make me healthy.", corr: "✅ Because it helps me stay healthy and energetic." },
-          { q: "What equipment do you need for this sport?", err: "❌ I need goggles and swimsuit.", corr: "✅ I need swimming goggles and a professional swimsuit." },
-          { q: "Have you ever participated in a competition?", err: "❌ No I never join any competition before.", corr: "✅ No, I have never participated in any competition before." },
-          { q: "What new sport would you like to try next?", err: "❌ I want try basketball.", corr: "✅ I would love to try playing basketball next." }
+          { q: `What are your primary reflections regarding ${topic}?`, err: "❌ I think it is useful because can help.", corr: "✅ I believe it is highly beneficial because it assists us daily." },
+          { q: `How would you compare ${topic} with past experiences?`, err: "❌ It is more better than before.", corr: "✅ It is considerably improved compared to previous experiences." },
+          { q: `What specific strategies help you master ${topic}?`, err: "❌ I practice when I have time.", corr: "✅ I consistently practice whenever I have spare time." },
+          { q: `Why do experts emphasize the importance of ${topic}?`, err: "❌ Because makes people smart.", corr: "✅ Because it significantly enhances cognitive development and critical thinking." },
+          { q: `Would you recommend exploring ${topic} to others?`, err: "❌ Yes because is interesting.", corr: "✅ Absolutely, because it offers profound insights and entertainment." }
         ];
         suggestedVocab = [
-          { term: "energetic", ipa: "/ˌenəˈdʒetɪk/", cn: "精力充沛的", py: "" },
-          { term: "stamina", ipa: "/ˈstæmɪnə/", cn: "耐力 / 持久力", py: "" },
-          { term: "dedication", ipa: "/ˌdedɪˈkeɪʃn/", cn: "奉献 / 投入", py: "" },
-          { term: "achievement", ipa: "/əˈtʃiːvmənt/", cn: "成就 / 成绩", py: "" },
-          { term: "flexible", ipa: "/ˈfleksəbl/", cn: "灵活的 / 柔韧的", py: "" }
+          { term: "advantage", ipa: "/ədˈvɑːntɪdʒ/", cn: "优势 / 有利条件", py: "" },
+          { term: "environment", ipa: "/inˈvairənmənt/", cn: "环境 / Surrounding", py: "" },
+          { term: "strategy", ipa: "/ˈstrætədʒi/", cn: "策略 / 行动计划", py: "" },
+          { term: "efficient", ipa: "/iˈfiʃənt/", cn: "高效的 / 有能力的", py: "" },
+          { term: "development", ipa: "/diˈveləpmənt/", cn: "发展 / 进展", py: "" }
+        ];
+      } else {
+        suggestedSentences = [
+          { q: `What are your main thoughts about ${topic}?`, err: "❌ I think it is good because make me happy.", corr: "✅ I think it is great because it makes me happy." },
+          { q: `Can you explain how you practice ${topic}?`, err: "❌ I do in weekend with my family.", corr: "✅ I practice it over the weekend with my family." },
+          { q: `What is the most interesting part of ${topic}?`, err: "❌ Is very fun and colorful.", corr: "✅ It is very fun and colorful." },
+          { q: `Would you like to learn more about ${topic}?`, err: "❌ Yes I want learn more.", corr: "✅ Yes, I would love to learn more about it." },
+          { q: `How do you feel when studying ${topic}?`, err: "❌ I feel happy and excite.", corr: "✅ I feel happy and excited." }
+        ];
+        suggestedVocab = [
+          { term: "interesting", ipa: "/ˈɪntrəstɪŋ/", cn: "有趣的", py: "" },
+          { term: "favorite", ipa: "/ˈfeɪvərɪt/", cn: "特别喜爱的", py: "" },
+          { term: "practice", ipa: "/ˈpræktɪs/", cn: "练习 / 实践", py: "" },
+          { term: "wonderful", ipa: "/ˈwʌndəfl/", cn: "精彩的 / 美妙的", py: "" },
+          { term: "activity", ipa: "/ækˈtɪvəti/", cn: "活动", py: "" }
         ];
       }
 
@@ -1143,9 +1161,9 @@
       renderVocab(student.vocab);
 
       setTimeout(() => {
-        btn.innerHTML = `<i data-lucide="wand-2" class="w-4 h-4"></i> Generate Fun Sentences & Vocab`;
+        btn.innerHTML = `<i data-lucide="wand-2" class="w-4 h-4"></i> Generate Level-Targeted Content`;
         lucide.createIcons();
-        alert(`Successfully generated and added 5+ sentences and vocabulary words tailored to "${topic}"!`);
+        alert(`Successfully generated sentences & vocabulary tailored to ${student.englishName}'s current level (${student.level || 'Standard'})!`);
       }, 600);
     }
 
@@ -1656,7 +1674,6 @@
           skillSums[k] += (rec.scores[k] || 0);
         });
 
-        // Table row
         const tr = document.createElement('tr');
         tr.className = "hover:bg-indigo-900/40 transition-all";
         tr.innerHTML = `
@@ -1676,7 +1693,6 @@
         `;
         tbody.appendChild(tr);
 
-        // Calculate Strengths & Weaknesses for this session
         let bestSkillKey = 'conn';
         let worstSkillKey = 'conn';
         let bestVal = -1;
@@ -1691,7 +1707,6 @@
         const sentencesCount = rec.sentences ? rec.sentences.length : 0;
         const vocabCount = rec.vocab ? rec.vocab.length : 0;
 
-        // Render Detailed Session Insight Card with Independent Visual Dismissal Button
         const card = document.createElement('div');
         card.id = `insight-card-${idx}`;
         card.className = "bg-indigo-950/80 p-4.5 rounded-2xl border border-indigo-800/80 space-y-3 relative group shadow-lg";
@@ -1711,7 +1726,6 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <!-- What the student DID -->
             <div class="bg-indigo-900/60 p-3 rounded-2xl border border-indigo-800/80 space-y-1.5">
               <span class="text-emerald-400 font-bold uppercase tracking-wider block flex items-center gap-1">
                 <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> What the Student Did (已完成表现)
@@ -1724,7 +1738,6 @@
               </ul>
             </div>
 
-            <!-- What the student DIDN'T DO / Areas for Growth -->
             <div class="bg-indigo-900/60 p-3 rounded-2xl border border-indigo-800/80 space-y-1.5">
               <span class="text-pink-400 font-bold uppercase tracking-wider block flex items-center gap-1">
                 <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Areas to Improve & What Was Missed (需改进与未完成项)
@@ -1737,7 +1750,6 @@
             </div>
           </div>
 
-          <!-- Strengths, Weaknesses, Suggestions & What to Keep On -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-1">
             <div class="bg-emerald-950/40 border border-emerald-500/40 p-2.5 rounded-2xl space-y-1">
               <span class="text-emerald-400 font-bold block flex items-center gap-1">
@@ -1790,7 +1802,6 @@
       lucide.createIcons();
     }
 
-    // Independent function to dismiss/remove only the insight card without touching the history log or charts
     function dismissInsightCard(index) {
       const cardEl = document.getElementById(`insight-card-${index}`);
       if (cardEl) {
@@ -2055,7 +2066,7 @@
       let countedSessions = 0;
 
       for (let i = 1; i <= 8; i++) {
-        const session = history[i - 1]; // map frame to archived history session
+        const session = history[i - 1];
         let starStr = "☆☆☆☆☆";
         let displayDate = "--/--/--";
         let storedImg = student[`img_rew${i}`] || "";
@@ -2077,7 +2088,6 @@
           displayDate = student[`rewDate${i}`] || "--/--/--";
         }
 
-        // Render Reward Frame with Delete Button
         const div = document.createElement('div');
         div.className = "bg-indigo-950 border border-indigo-800/80 rounded-2xl p-2.5 text-center space-y-2 shadow-inner";
         div.innerHTML = `
@@ -2097,7 +2107,6 @@
         `;
         gridContainer.appendChild(div);
 
-        // Render 8-Session Summary Row
         const summaryRow = document.createElement('div');
         summaryRow.className = "flex items-center justify-between py-1.5 px-2 hover:bg-indigo-900/50 rounded-xl transition-all";
         if (session) {
@@ -2124,7 +2133,6 @@
         summaryContainer.appendChild(summaryRow);
       }
 
-      // Compute Averaged Score across all covered sessions (up to 8)
       const avgScoreDisplay = document.getElementById('profile-total-display');
       if (countedSessions > 0) {
         const averagePts = (sumOfTotals / countedSessions).toFixed(1);
@@ -2255,7 +2263,6 @@
       }
     }
 
-    // Function to delete/clear image from any frame
     function deleteImage(targetId) {
       const img = document.getElementById(targetId);
       const placeholder = document.getElementById(`${targetId}-placeholder`);
@@ -2353,7 +2360,6 @@
       renderRewardBoardFrames();
     }
 
-    /* SENTENCE MANAGEMENT WITH DELETE FUNCTIONALITY */
     function renderSentences(list) {
       const container = document.getElementById('sentence-list');
       container.innerHTML = '';
@@ -2393,7 +2399,6 @@
       }
     }
 
-    /* VOCABULARY MANAGEMENT WITH DELETE FUNCTIONALITY */
     function renderVocab(list) {
       const container = document.getElementById('vocab-grid');
       container.innerHTML = '';
