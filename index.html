@@ -27,20 +27,6 @@
       .tab-content:last-child { page-break-after: avoid; }
       div, section { box-shadow: none !important; border-radius: 0 !important; }
     }
-
-    /* Styles for the image logo to fit neatly in the header */
-    .header-logo-container {
-      display: flex;
-      align-items: center;
-      max-height: 45px;
-      max-width: 140px;
-    }
-    .header-logo-container img {
-      max-height: 42px;
-      width: auto;
-      height: auto;
-      object-fit: contain;
-    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-sky-950 via-indigo-950 to-purple-950 text-slate-100 font-sans min-h-screen pb-12">
@@ -182,9 +168,9 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
       
       <div class="flex flex-wrap items-center gap-3">
-        <!-- Integrated Image Logo[cite: 3] -->
-        <div class="header-logo-container">
-          <img src="images/i-shepherd.png" alt="i-shepherd.png" />
+        <div class="bg-gradient-to-r from-pink-500 to-amber-400 text-slate-950 px-3.5 py-2 rounded-2xl font-black text-base flex items-center gap-2 shadow-lg">
+          <i data-lucide="star" class="w-5 h-5 fill-slate-950"></i>
+          <span>i-SHEPHERD</span>
         </div>
 
         <!-- Password Protected Teacher Selector -->
@@ -1104,6 +1090,7 @@
 
       // Determine complexity tier based on student level
       if (studentLevel.includes('level 0') || studentLevel.includes('pre-a1') || studentLevel.includes('starter') || studentLevel.includes('level 1')) {
+        // Level 0 - 1 (Pre-A1 / A1 Starter): Simple words, basic S-V-O, present tense
         suggestedSentences = [
           { q: `What is this about ${topic}?`, err: "❌ I like very much.", corr: "✅ I like it very much." },
           { q: `Do you see this in ${topic}?`, err: "❌ Yes I can see.", corr: "✅ Yes, I can see it." },
@@ -1119,6 +1106,7 @@
           { term: "fun", ipa: "/fʌn/", cn: "有趣的", py: "" }
         ];
       } else if (studentLevel.includes('level 3') || studentLevel.includes('intermediate') || studentLevel.includes('level 4') || studentLevel.includes('upper')) {
+        // Level 3 - 4 (A2/B1 Intermediate): Complex connectors, adjectives, opinions
         suggestedSentences = [
           { q: `What are your primary reflections regarding ${topic}?`, err: "❌ I think it is useful because can help.", corr: "✅ I believe it is highly beneficial because it assists us daily." },
           { q: `How would you compare ${topic} with past experiences?`, err: "❌ It is more better than before.", corr: "✅ It is considerably improved compared to previous experiences." },
@@ -1134,6 +1122,7 @@
           { term: "development", ipa: "/diˈveləpmənt/", cn: "发展 / 进展", py: "" }
         ];
       } else {
+        // Level 2 (A1 Elementary - Default / Standard)
         suggestedSentences = [
           { q: `What are your main thoughts about ${topic}?`, err: "❌ I think it is good because make me happy.", corr: "✅ I think it is great because it makes me happy." },
           { q: `Can you explain how you practice ${topic}?`, err: "❌ I do in weekend with my family.", corr: "✅ I practice it over the weekend with my family." },
@@ -1674,6 +1663,7 @@
           skillSums[k] += (rec.scores[k] || 0);
         });
 
+        // Table row
         const tr = document.createElement('tr');
         tr.className = "hover:bg-indigo-900/40 transition-all";
         tr.innerHTML = `
@@ -1693,6 +1683,7 @@
         `;
         tbody.appendChild(tr);
 
+        // Calculate Strengths & Weaknesses for this session
         let bestSkillKey = 'conn';
         let worstSkillKey = 'conn';
         let bestVal = -1;
@@ -1707,6 +1698,7 @@
         const sentencesCount = rec.sentences ? rec.sentences.length : 0;
         const vocabCount = rec.vocab ? rec.vocab.length : 0;
 
+        // Render Detailed Session Insight Card with Independent Visual Dismissal Button
         const card = document.createElement('div');
         card.id = `insight-card-${idx}`;
         card.className = "bg-indigo-950/80 p-4.5 rounded-2xl border border-indigo-800/80 space-y-3 relative group shadow-lg";
@@ -1726,6 +1718,7 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <!-- What the student DID -->
             <div class="bg-indigo-900/60 p-3 rounded-2xl border border-indigo-800/80 space-y-1.5">
               <span class="text-emerald-400 font-bold uppercase tracking-wider block flex items-center gap-1">
                 <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> What the Student Did (已完成表现)
@@ -1738,6 +1731,7 @@
               </ul>
             </div>
 
+            <!-- What the student DIDN'T DO / Areas for Growth -->
             <div class="bg-indigo-900/60 p-3 rounded-2xl border border-indigo-800/80 space-y-1.5">
               <span class="text-pink-400 font-bold uppercase tracking-wider block flex items-center gap-1">
                 <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Areas to Improve & What Was Missed (需改进与未完成项)
@@ -1750,6 +1744,7 @@
             </div>
           </div>
 
+          <!-- Strengths, Weaknesses, Suggestions & What to Keep On -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-1">
             <div class="bg-emerald-950/40 border border-emerald-500/40 p-2.5 rounded-2xl space-y-1">
               <span class="text-emerald-400 font-bold block flex items-center gap-1">
@@ -1802,6 +1797,7 @@
       lucide.createIcons();
     }
 
+    // Independent function to dismiss/remove only the insight card without touching the history log or charts
     function dismissInsightCard(index) {
       const cardEl = document.getElementById(`insight-card-${index}`);
       if (cardEl) {
@@ -2066,7 +2062,7 @@
       let countedSessions = 0;
 
       for (let i = 1; i <= 8; i++) {
-        const session = history[i - 1];
+        const session = history[i - 1]; // map frame to archived history session
         let starStr = "☆☆☆☆☆";
         let displayDate = "--/--/--";
         let storedImg = student[`img_rew${i}`] || "";
@@ -2088,6 +2084,7 @@
           displayDate = student[`rewDate${i}`] || "--/--/--";
         }
 
+        // Render Reward Frame with Delete Button
         const div = document.createElement('div');
         div.className = "bg-indigo-950 border border-indigo-800/80 rounded-2xl p-2.5 text-center space-y-2 shadow-inner";
         div.innerHTML = `
@@ -2107,6 +2104,7 @@
         `;
         gridContainer.appendChild(div);
 
+        // Render 8-Session Summary Row
         const summaryRow = document.createElement('div');
         summaryRow.className = "flex items-center justify-between py-1.5 px-2 hover:bg-indigo-900/50 rounded-xl transition-all";
         if (session) {
@@ -2133,6 +2131,7 @@
         summaryContainer.appendChild(summaryRow);
       }
 
+      // Compute Averaged Score across all covered sessions (up to 8)
       const avgScoreDisplay = document.getElementById('profile-total-display');
       if (countedSessions > 0) {
         const averagePts = (sumOfTotals / countedSessions).toFixed(1);
@@ -2263,6 +2262,7 @@
       }
     }
 
+    // Function to delete/clear image from any frame
     function deleteImage(targetId) {
       const img = document.getElementById(targetId);
       const placeholder = document.getElementById(`${targetId}-placeholder`);
@@ -2360,6 +2360,7 @@
       renderRewardBoardFrames();
     }
 
+    /* SENTENCE MANAGEMENT WITH DELETE FUNCTIONALITY */
     function renderSentences(list) {
       const container = document.getElementById('sentence-list');
       container.innerHTML = '';
@@ -2399,6 +2400,7 @@
       }
     }
 
+    /* VOCABULARY MANAGEMENT WITH DELETE FUNCTIONALITY */
     function renderVocab(list) {
       const container = document.getElementById('vocab-grid');
       container.innerHTML = '';
