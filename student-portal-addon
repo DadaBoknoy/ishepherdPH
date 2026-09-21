@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>i-Shepherd Interactive Teacher Portal</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for Student Progress Tracking -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- html2canvas for JPG Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Cropper.js for Photo Cropping -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <style>
+    .drop-zone.dragover {
+      border-color: #f43f5e !important;
+      background-color: rgba(244, 63, 94, 0.2) !important;
+      transform: scale(1.02);
+    }
+    @media print {
+      .no-print { display: none !important; }
+      @page { margin: 0; size: auto; }
+      body { background-color: #ffffff !important; color: #000000 !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; width: 100% !important; }
+      .tab-content { display: block !important; page-break-after: always; margin: 0 !important; padding: 10px !important; }
+      .tab-content:last-child { page-break-after: avoid; }
+      div, section { box-shadow: none !important; border-radius: 0 !important; }
+    }
+
+    #category-payment .pay-panel { background:rgba(49,46,129,.45); border:1px solid rgba(67,56,202,.6); border-radius:24px; padding:24px; box-shadow:0 10px 20px rgba(0,0,0,.12); }
+    #category-payment .pay-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+    #category-payment label { display:block; font-size:12px; color:#c7d2fe; margin-bottom:7px; }
+    #category-payment input, #category-payment select, #category-payment textarea, .pay-duration { background:#1e1b4b; border:1px solid #6366a0; border-radius:12px; padding:10px 12px; color:#fff; width:100%; font:inherit; font-size:14px; }
+    #category-payment .pay-stat { background:#1e1b4b; border:1px solid #433884; border-radius:14px; padding:18px; }
+    #category-payment .pay-stat strong { display:block; color:#fcd34d; font-size:27px; margin-top:5px; }
+    .payment-drop { display:flex; align-items:center; justify-content:center; flex-direction:column; gap:12px; border:2px dashed #818cf8; background:#171637; border-radius:16px; min-height:240px; padding:20px; cursor:pointer; text-align:center; color:#c7d2fe; width:100%; }
+    .payment-drop:focus-visible, .payment-drop.dragover { outline:3px solid #fcd34d; background:#312e81; }
+    .payment-drop img { max-height:240px; max-width:100%; object-fit:contain; background:white; }
+    #category-payment th, #category-payment td { padding:12px; text-align:left; border-bottom:1px solid #373064; }
+    #category-payment th { color:#c7d2fe; font-size:12px; }
+    #category-payment .pay-muted { color:#a5b4fc; font-size:12px; line-height:1.7; }
+    #category-payment button { font-family:inherit; }
+    #category-payment [hidden] { display:none !important; }
+    #category-payment .pay-action { border-radius:12px; padding:10px 16px; font-size:12px; font-weight:700; background:linear-gradient(to right,#ec4899,#f43f5e); color:white; }
+    #category-payment .pay-action:disabled { opacity:.45; cursor:not-allowed; }
+    #category-payment .pay-secondary { background:#3730a3; }
+    #category-payment input:focus, #category-payment select:focus { outline:2px solid #818cf8; outline-offset:2px; }
+    @media(max-width:700px) { #category-payment .pay-grid { grid-template-columns:1fr; } #category-payment .pay-panel { padding:16px; } }
+
+    /* Embedded company logo: no separate image file required. */
+    .portal-brand-logo { display:block; object-fit:contain; flex-shrink:0; height:auto; }
+    .portal-brand-login { width:132px; margin:0 auto 12px; }
+    .portal-brand-nav { width:68px; }
+    #login-gate-page { overflow-y:auto; }
+    #login-gate-page > div { margin-top:auto; margin-bottom:auto; }
+    @media(max-width:640px) {
+      .portal-brand-login { width:104px; }
+      .portal-brand-nav { width:56px; }
+      #login-gate-page > div { padding:24px; }
+    }
+    .sync-field[contenteditable="true"]:empty::before { content: "Not set"; opacity: .55; font-weight: 400; }
+    .sync-field[contenteditable="true"]:empty { display: inline-block; min-width: 4ch; }
+  
+/* Administrator student recruitment */
+#admin-dashboard-page > div { min-height:0; }
+#admin-view-recruitment-sec { min-height:0; }
+.recruit-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:end; }
+.recruit-toolbar label { flex:1 1 200px; }
+#admin-view-recruitment-sec { font-size:14px; line-height:1.6; }
+#admin-view-recruitment-sec label { display:block; color:#c7d2fe; font-weight:600; }
+#admin-view-recruitment-sec :is(input,select,textarea) { display:block; width:100%; background:#172554; border:1px solid #6366f1; color:#f8fafc; border-radius:10px; padding:10px 12px; font:inherit; margin-top:4px; }
+#admin-view-recruitment-sec :is(input,select,textarea):focus-visible { outline:2px solid #f9a8d4; outline-offset:2px; }
+#admin-view-recruitment-sec textarea { min-height:90px; resize:vertical; }
+.recruit-layout { display:grid; grid-template-columns:minmax(190px, .7fr) minmax(0,2fr); gap:16px; align-items:start; margin-top:16px; }
+.recruit-list { display:grid; gap:8px; max-height:560px; overflow-y:auto; }
+.recruit-student { text-align:left; padding:12px; border:1px solid #3730a3; border-radius:14px; background:#1e1b4b; color:#e0e7ff; display:flex; align-items:center; gap:10px; width:100%; }
+.recruit-student[aria-pressed=true] { border-color:#f472b6; background:#312e81; }
+.recruit-student img { width:44px; height:44px; object-fit:cover; border-radius:10px; }
+.recruit-student small { display:block; color:#c7d2fe; }
+.recruit-box { background:rgba(49,46,129,.4); border:1px solid #3730a3; border-radius:16px; padding:16px; margin-bottom:14px; }
+.recruit-box h4 { color:#f9a8d4; font-weight:700; font-size:16px; margin-bottom:12px; }
+.recruit-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.recruit-fields .wide { grid-column:1/-1; }
+.recruit-fields dt { font-size:12px; color:#a5b4fc; }
+.recruit-fields dd { color:#f8fafc; white-space:pre-wrap; overflow-wrap:anywhere; }
+.recruit-note { color:#c7d2fe; font-size:13px; }
+.recruit-action { background:#ec4899; color:#fff; border-radius:12px; padding:10px 18px; font-weight:700; }
+@media(max-width:640px) {
+ #admin-dashboard-page { padding:8px; }
+ #admin-dashboard-page > div { padding:16px; max-height:95dvh; gap:14px; overflow-y:auto; }
+ #admin-dashboard-page > div > * { flex-shrink:0; }
+ #admin-view-recruitment-sec { flex:none; overflow:visible; }
+ #admin-dashboard-page > div > div:first-child { flex-wrap:wrap; gap:12px; }
+ #admin-dashboard-page > div > .grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+ #admin-dashboard-page > div > .grid > div { padding:8px; }
+ #admin-dashboard-page > div > .grid .text-xs { font-size:10px; }
+ .recruit-layout,.recruit-fields { grid-template-columns:minmax(0,1fr); }
+ .recruit-list { max-height:190px; }
+ #admin-view-recruitment-sec :is(input,select,textarea) { font-size:16px; }
+}
+
+</style>
+
+  <style id="responsive-readability">
+    html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+    body { overflow-wrap:break-word; }
+    main, header > div, .tab-content { width:100%; min-width:0; }
+    main .grid > *, main .flex > *, header .flex > * { min-width:0; }
+    img, video { max-width:100%; }
+    input, select, textarea { max-width:100%; }
+    [contenteditable="true"] { overflow-wrap:anywhere; }
+    header nav { max-width:100%; min-width:0; flex-wrap:wrap; gap:4px; }
+    header nav button { flex:0 0 auto; min-height:42px; white-space:normal; }
+    header button, main button { touch-action:manipulation; }
+    .overflow-x-auto { max-width:100%; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; }
+    .portal-table-scroll:focus-visible { outline:2px solid #fcd34d; outline-offset:3px; }
+    :is(#login-gate-page,#admin-dashboard-page,#proof-modal,#level-test-modal,#auth-modal,#crop-modal) { overflow-y:auto; }
+    :is(#login-gate-page,#admin-dashboard-page,#proof-modal,#level-test-modal,#auth-modal,#crop-modal) > div { max-width:100%; margin-block:auto; flex-shrink:0; }
+    .report-overview { padding:clamp(16px,3vw,28px); }
+    .report-overview .report-overview-layout { display:grid; grid-template-columns:minmax(0,1fr); gap:24px; }
+    .report-overview-info, .report-overview-ratings { min-width:0; }
+    .report-overview .report-overview-badges { display:flex; flex-wrap:wrap; gap:10px; }
+    .report-overview-badges > * { min-height:32px; font-size:12px; }
+    .report-overview h1 { font-size:clamp(24px,3vw,32px); line-height:1.3; margin-top:14px; }
+    .report-overview .report-overview-details { display:grid; grid-template-columns:1fr 1.2fr 1.5fr; gap:12px; padding-top:12px; }
+    .report-overview-details p { background:rgba(30,27,75,.5); border:1px solid rgba(129,140,248,.3); border-radius:14px; padding:16px; margin:0; }
+    .report-overview-details p > span { display:block; font-size:14px; line-height:1.5; color:#c7d2fe; margin-bottom:6px; }
+    .report-overview-details strong { display:block; font-size:17px; line-height:1.65; overflow-wrap:anywhere; }
+    .report-overview .report-score-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding:16px; }
+    .report-score-grid > [id^="card-"] { display:flex; align-items:center; gap:12px; padding:16px; min-height:96px; min-width:0; }
+    .report-score-grid > [id^="card-"] > :is(svg,i) { width:22px; height:22px; flex-shrink:0; }
+    .report-score-grid > [id^="card-"] > div { min-width:0; }
+    .report-score-grid [id^="card-"] span:first-child { display:block; font-size:14px; line-height:1.5; opacity:1; margin-bottom:4px; }
+    .report-score-grid [id^="badge-"] { display:block; font-size:17px; line-height:1.5; font-weight:800; }
+    .report-overview .report-save-button { min-height:50px; padding:14px 20px; font-size:15px; line-height:1.5; align-self:stretch; }
+    #category-payment .pay-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)) !important; }
+    @media (max-width:900px) {
+      header { position:relative !important; }
+      header > div > div, header nav { max-width:100%; }
+      header nav { width:100%; }
+      header nav button { flex:1 0 auto; }
+      .report-overview .report-overview-details { grid-template-columns:1fr; }
+      .report-overview-details p { padding:14px 16px; }
+    }
+    @media (max-width:600px) {
+      main { padding-inline:12px !important; margin-top:16px !important; }
+      header > div { padding:12px; gap:12px; }
+      header > div > div:first-child { width:100%; }
+      header #student-selector { width:100%; min-width:0; }
+      header select { font-size:16px !important; }
+      main :is(input,select,textarea) { font-size:16px !important; }
+      main .text-xs { font-size:13px; line-height:1.6; }
+      main .text-sm { font-size:15px; line-height:1.6; }
+      main .p-6, main .p-8 { padding:16px; }
+      .report-overview .report-score-grid { grid-template-columns:repeat(2,minmax(0,1fr)); padding:10px; gap:10px; }
+      .report-score-grid > [id^="card-"] { flex-direction:column; align-items:flex-start; gap:8px; padding:12px; }
+      .report-score-grid [id^="card-"] span:first-child { font-size:13px; }
+      .report-score-grid [id^="badge-"] { font-size:16px; }
+      .report-overview .report-overview-layout { gap:18px; }
+      #category-payment .pay-panel { padding:16px; }
+    }
+    @media (max-width:359px) {
+      .report-overview .report-score-grid { grid-template-columns:1fr; }
+      .report-score-grid > [id^="card-"] { flex-direction:row; align-items:center; }
+    }
+    @media print {
+      .report-overview .report-overview-details, .report-overview .report-score-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .report-overview-details p, .report-score-grid > div { break-inside:avoid; }
+    }
+  </style>
+<style>.sync-field[data-key="hobbies"],.sync-field[data-key="likesDislikes"],.sync-field[data-key="otherDetails"]{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}</style>
+</head>
+<body class="bg-gradient-to-br from-sky-950 via-indigo-950 to-purple-950 text-slate-100 font-sans min-h-screen pb-12">
+
+  <!-- FRONT LOGIN GATE -->
+  <div id="login-gate-page" class="fixed inset-0 bg-slate-950 z-[200] flex items-center justify-center p-4">
+    <div class="bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 border-2 border-amber-400/50 rounded-3xl p-8 max-w-xl w-full shadow-2xl space-y-6 text-center backdrop-blur-md">
+      <div class="space-y-2">
+        <span class="text-3xl font-bold text-amber-300">i-Shepherd Portal</span>
+        <p class="text-slate-300 text-sm">Please sign in to access the portal dashboard.</p>
+      </div>
+      <button onclick="document.getElementById('login-gate-page').classList.add('hidden')" class="w-full py-3 bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold rounded-xl shadow-lg hover:brightness-110 transition">Enter Portal</button>
+    </div>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="bg-indigo-950/80 border-b border-indigo-800/50 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-4 w-full md:w-auto justify-between">
+        <div class="flex items-center gap-3">
+          <span class="font-bold text-lg text-amber-300 tracking-wide">i-Shepherd Teacher Portal</span>
+        </div>
+        <div class="md:hidden w-full">
+          <select id="student-selector-mobile" class="bg-indigo-900 border border-indigo-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400 w-full"></select>
+        </div>
+      </div>
+      
+      <!-- Teacher Portal Search & Student Selector -->
+      <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+        <div class="w-full sm:w-64">
+          <input type="text" id="teacher-student-search" placeholder="🔍 Search teacher's students..." class="bg-indigo-900/90 border border-indigo-600 rounded-lg px-3 py-1.5 text-sm text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-amber-400 w-full" />
+        </div>
+        <div id="student-selector-container" class="hidden md:block w-full sm:w-auto">
+          <select id="student-selector" class="bg-indigo-900 border border-indigo-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400 min-w-[200px]"></select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 mt-6">
+    <!-- Admin Portal Student Recruitment & Search Section -->
+    <section id="admin-view-recruitment-sec" class="bg-indigo-950/60 border border-indigo-800/60 rounded-2xl p-6 backdrop-blur-sm">
+      <h2 class="text-xl font-bold text-amber-300 mb-4 flex items-center gap-2">
+        <span>Admin Portal Student Management</span>
+      </h2>
+      <div class="recruit-toolbar mb-4">
+        <label class="w-full">
+          <span>Search Admin Students:</span>
+          <input type="text" id="admin-student-search" placeholder="Type student name or ID..." class="w-full mt-1 bg-indigo-900 border border-indigo-600 rounded-lg px-3 py-2 text-sm text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        </label>
+      </div>
+
+      <div class="recruit-layout">
+        <!-- Sorted Student List -->
+        <div class="recruit-list" id="admin-recruit-list">
+          <!-- Populated dynamically in alphabetical order -->
+        </div>
+
+        <div class="recruit-box">
+          <h4>Student Details & Image Upload</h4>
+          <p class="recruit-note mb-3">Drag & drop or upload a photo into the frame below to adjust and crop student pictures.</p>
+          
+          <div class="photo-frame drop-zone border-2 border-dashed border-indigo-400 bg-indigo-900/40 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[180px] transition hover:border-amber-400">
+            <span class="text-3xl mb-2">📸</span>
+            <p class="text-xs text-indigo-200 font-semibold">Drag & Drop Student Photo Here</p>
+            <p class="text-[10px] text-indigo-400 mt-1">Supports JPG, PNG (Opens Cropper)</p>
+            <input type="file" class="hidden-file-input hidden" accept="image/*" />
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Photo Crop Modal -->
+  <div id="crop-modal" class="fixed inset-0 bg-slate-950/80 z-[300] hidden flex items-center justify-center p-4">
+    <div class="bg-indigo-950 border-2 border-indigo-600 rounded-2xl p-6 max-w-xl w-full flex flex-col gap-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-indigo-800 pb-3">
+        <h3 class="text-lg font-bold text-amber-300">Crop & Adjust Image</h3>
+        <button id="cancel-crop-x" class="text-indigo-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+      <div class="max-h-[50vh] overflow-hidden flex items-center justify-center bg-slate-900 rounded-lg p-2 border border-indigo-800">
+        <img id="crop-image-target" src="" alt="Target Image for Cropping" class="max-w-full max-h-[45vh] block" />
+      </div>
+      <div class="flex justify-end gap-3 mt-2">
+        <button id="cancel-crop-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">Cancel</button>
+        <button id="apply-crop-btn" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-500 hover:brightness-110 text-white rounded-lg text-sm font-semibold transition">Apply & Crop</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global Cropper & Target Variables
+    let activeCropper = null;
+    let activeTargetFrame = null;
+
+    // Crop Modal Elements
+    const cropModal = document.getElementById('crop-modal');
+    const cropImageTarget = document.getElementById('crop-image-target');
+    const applyCropBtn = document.getElementById('apply-crop-btn');
+    const cancelCropBtn = document.getElementById('cancel-crop-btn');
+    const cancelCropX = document.getElementById('cancel-crop-x');
+
+    // Handle Image Selection and Open Crop Modal
+    function openCropModalForFile(file, targetFrame) {
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        cropImageTarget.src = e.target.result;
+        activeTargetFrame = targetFrame;
+        cropModal.classList.remove('hidden');
+
+        if (activeCropper) {
+          activeCropper.destroy();
+        }
+        activeCropper = new Cropper(cropImageTarget, {
+          aspectRatio: NaN, // Free crop aspect ratio
+          viewMode: 1,
+          autoCropArea: 0.9,
+          background: false,
+          responsive: true
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function closeCropModal() {
+      cropModal.classList.add('hidden');
+      if (activeCropper) {
+        activeCropper.destroy();
+        activeCropper = null;
+      }
+      activeTargetFrame = null;
+    }
+
+    cancelCropBtn.addEventListener('click', closeCropModal);
+    cancelCropX.addEventListener('click', closeCropModal);
+
+    applyCropBtn.addEventListener('click', () => {
+      if (!activeCropper || !activeTargetFrame) return;
+      const canvas = activeCropper.getCroppedCanvas();
+      if (canvas) {
+        const croppedDataUrl = canvas.toDataURL();
+        let img = activeTargetFrame.querySelector('img');
+        if (!img) {
+          img = document.createElement('img');
+          img.className = 'w-full h-full object-cover rounded-lg shadow-md';
+          activeTargetFrame.appendChild(img);
+        } else {
+          img.src = croppedDataUrl;
+        }
+      }
+      closeCropModal();
+    });
+
+    // Attach Drag & Drop + Click File Upload Listeners to Photo Frames
+    function setupPhotoFrames() {
+      const frames = document.querySelectorAll('.drop-zone, .payment-drop, .photo-frame');
+      frames.forEach(frame => {
+        // Drag events
+        frame.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          frame.classList.add('dragover');
+        });
+        frame.addEventListener('dragleave', () => {
+          frame.classList.remove('dragover');
+        });
+        frame.addEventListener('drop', (e) => {
+          e.preventDefault();
+          frame.classList.remove('dragover');
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            openCropModalForFile(e.dataTransfer.files[0], frame);
+          }
+        });
+
+        // Click to upload file directly
+        const fileInput = frame.querySelector('.hidden-file-input');
+        frame.addEventListener('click', (e) => {
+          if (e.target.tagName !== 'INPUT' && fileInput) {
+            fileInput.click();
+          }
+        });
+
+        if (fileInput) {
+          fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+              openCropModalForFile(e.target.files[0], frame);
+            }
+          });
+        }
+      });
+    }
+
+    // Student Data Repository
+    let studentsData = [
+      { id: '101', name: 'Alice Smith', avatar: '' },
+      { id: '102', name: 'Charlie Brown', avatar: '' },
+      { id: '103', name: 'Bob Jones', avatar: '' },
+      { id: '104', name: 'Diana Prince', avatar: '' },
+      { id: '105', name: 'Aaron Paul', avatar: '' }
+    ];
+
+    // Alphabetical Sorting Helper Function
+    function getSortedStudents(list) {
+      return list.slice().sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    }
+
+    // Render Student Lists (Filtered by Search Queries)
+    function renderStudentList() {
+      const teacherQuery = (document.getElementById('teacher-student-search')?.value || '').toLowerCase();
+      const adminQuery = (document.getElementById('admin-student-search')?.value || '').toLowerCase();
+
+      const sortedStudents = getSortedStudents(studentsData);
+
+      // 1. Render Teacher Select Dropdowns
+      const teacherFiltered = sortedStudents.filter(s => 
+        s.name.toLowerCase().includes(teacherQuery) || s.id.toLowerCase().includes(teacherQuery)
+      );
+
+      const teacherSelectors = [
+        document.getElementById('student-selector'),
+        document.getElementById('student-selector-mobile')
+      ];
+
+      teacherSelectors.forEach(select => {
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '';
+        if (teacherFiltered.length === 0) {
+          const opt = document.createElement('option');
+          opt.textContent = 'No matching students';
+          select.appendChild(opt);
+        } else {
+          teacherFiltered.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student.id;
+            option.textContent = `${student.name} (${student.id})`;
+            select.appendChild(option);
+          });
+          if (currentVal && teacherFiltered.some(s => s.id === currentVal)) {
+            select.value = currentVal;
+          }
+        }
+      });
+
+      // 2. Render Admin Portal Recruitment List
+      const adminList = document.getElementById('admin-recruit-list');
+      if (adminList) {
+        const adminFiltered = sortedStudents.filter(s => 
+          s.name.toLowerCase().includes(adminQuery) || s.id.toLowerCase().includes(adminQuery)
+        );
+
+        adminList.innerHTML = '';
+        if (adminFiltered.length === 0) {
+          adminList.innerHTML = `<div class="p-4 text-center text-indigo-300 text-xs">No students found matching "${adminQuery}"</div>`;
+        } else {
+          adminFiltered.forEach((student, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'recruit-student cursor-pointer hover:border-amber-400 transition';
+            btn.setAttribute('aria-pressed', index === 0 ? 'true' : 'false');
+            btn.innerHTML = `
+              <img src="${student.avatar || 'https://via.placeholder.com/44'}" alt="${student.name}" />
+              <div>
+                <strong>${student.name}</strong>
+                <small>ID: ${student.id}</small>
+              </div>
+            `;
+            adminList.appendChild(btn);
+          });
+        }
+      }
+    }
+
+    // Attach Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      setupPhotoFrames();
+      renderStudentList();
+
+      // Search event listeners for real-time filtering
+      const teacherSearchInput = document.getElementById('teacher-student-search');
+      if (teacherSearchInput) {
+        teacherSearchInput.addEventListener('input', renderStudentList);
+      }
+
+      const adminSearchInput = document.getElementById('admin-student-search');
+      if (adminSearchInput) {
+        adminSearchInput.addEventListener('input', renderStudentList);
+      }
+    });
+  </script>
+</body>
+</html>
